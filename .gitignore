@@ -1,0 +1,14 @@
+lista_7/ex2/ex2
+lista_7/ex2/lex.yy.c
+lista_7/ex3/lex.yy.c
+lista_7/ex4/ex4
+lista_7/ex4/lex.yy.c
+lista_7/lex.yy.c
+lista_7/lista7ex1
+lista_7/ex4/teste.txt
+lista_7/ex4/teste2.txt
+rascunhos/
+*.o
+*.out
+lex.yy.c
+*.txt
