@@ -3,90 +3,143 @@
 %{
 
 int linha=1;
-int coluna=0;
+int coluna=1;
+int qtdeComentarios=0;
+int existePrimeiroToken = 0;
+int abreComentario = 0;
 
 void printarErro(int linha, int coluna, char* erro) {
-    printf("error:lexical:%d:%d: %s\n", linha, coluna, erro);
+    if (existePrimeiroToken == 0) {
+        printf("error:lexical:%d:%d: %s", linha, coluna, erro);
+        existePrimeiroToken = 1;
+    } else {
+        printf("\nerror:lexical:%d:%d: %s", linha, coluna, erro);
+    }
 }
 void printarErroLongo(int linha, int coluna) {
-    printf("error:lexical:%d:%d: identifier too long\n", linha, coluna);
+    if (existePrimeiroToken == 0) {
+        printf("error:lexical:%d:%d: identifier too long", linha, coluna);
+        existePrimeiroToken = 1;
+    } else {
+        printf("\nerror:lexical:%d:%d: identifier too long", linha, coluna);
+    }
 }
+void printarToken(char* token) {
+    if (existePrimeiroToken == 0) {
+        printf("%s", token); // não tem token ainda, é o primeiro token, então não pula linha 
+        existePrimeiroToken = 1; // atualiza o verificador indicando que já existe um primeiro token
+    } else { 
+        printf("\n%s", token); // não é o primeiro token então imprime o \n antes
+    }
+}
+void printarStringSemAspasDuplas(char* token) {
+    printf("(");
+    for (int i=1; i < strlen(token) -1; i++) {
+        printf("%c", token[i]);
+    }
+    printf(")");
+}
+
 %}
 
 %%
 
-"void" {printf("VOID\n"), coluna += strlen(yytext);}
-"int" {printf("INT\n"), coluna += strlen(yytext);}
-"char" {printf("CHAR\n"), coluna += strlen(yytext);}
-"return" {printf("RETURN\n"), coluna += strlen(yytext);}
-"break" {printf("BREAK\n"), coluna += strlen(yytext);}
-"switch" {printf("SWITCH\n"), coluna += strlen(yytext);}
-"case" {printf("CASE\n"), coluna += strlen(yytext);}
-"default" {printf("DEFAULT\n"), coluna += strlen(yytext);}
-"do" {printf("DO\n"), coluna += strlen(yytext);}
-"while" {printf("WHILE\n"), coluna += strlen(yytext);}
-"for" {printf("FOR\n"), coluna += strlen(yytext);}
-"if" {printf("IF\n"), coluna += strlen(yytext);}
-"else" {printf("ELSE\n"), coluna += strlen(yytext);}
-"typedef" {printf("TYPEDEF\n"), coluna += strlen(yytext);}
-"struct" {printf("STRUCT\n"), coluna += strlen(yytext);}
-"+" {printf("PLUS\n"), coluna += strlen(yytext);}
-"-" {printf("MINUS\n"), coluna += strlen(yytext);}
-"*" {printf("MULTIPLY\n"), coluna += strlen(yytext);}
-"/" {printf("DIV\n"), coluna += strlen(yytext);}
-"%" {printf("REMAINDER\n"), coluna += strlen(yytext);}
-"++" {printf("INC\n"), coluna += strlen(yytext);}
-"--" {printf("DEC\n"), coluna += strlen(yytext);}
-"&" {printf("BITWISE_AND\n"), coluna += strlen(yytext);}
-"|" {printf("BITWISE_OR\n"), coluna += strlen(yytext);}
-"~" {printf("BITWISE_NOT\n"), coluna += strlen(yytext);}
-"^" {printf("BITWISE_XOR\n"), coluna += strlen(yytext);}
-"!" {printf("NOT\n"), coluna += strlen(yytext);}
-"&&" {printf("LOGICAL_AND\n"), coluna += strlen(yytext);}
-"||" {printf("LOGICAL_OR\n"), coluna += strlen(yytext);}
-"==" {printf("EQUAL"), coluna += strlen(yytext);}
-"!=" {printf("NOT_EQUAL\n"), coluna += strlen(yytext);}
-"<" {printf("LESS_THAN\n"), coluna += strlen(yytext);}
-">" {printf("GREATER_THAN\n"), coluna += strlen(yytext);}
-"<=" {printf("LESS_EQUAL\n"), coluna += strlen(yytext);}
-">=" {printf("GREATER_EQUAL\n"), coluna += strlen(yytext);}
-">>" {printf("R_SHIFT\n"), coluna += strlen(yytext);}
-"<<" {printf("L_SHIFT\n"), coluna += strlen(yytext);}
-"=" {printf("ASSIGN\n"), coluna += strlen(yytext);}
-"+=" {printf("ADD_ASIGN\n"), coluna += strlen(yytext);}
-"-=" {printf("MINUS_ASSIGN\n"), coluna += strlen(yytext);}
-";" {printf("SEMICOLON\n"), coluna += strlen(yytext);}
-"," {printf("COMMA\n"), coluna += strlen(yytext);}
-":" {printf("COLON\n"), coluna += strlen(yytext);}
-"(" {printf("L_PAREN\n"), coluna += strlen(yytext);}
-")" {printf("R_PAREN\n"), coluna += strlen(yytext);}
-"{" {printf("L_CURLY_BRACKET\n"), coluna += strlen(yytext);}
-"}" {printf("R_CURLY_BRACKET\n"), coluna += strlen(yytext);}
-"[" {printf("L_SQUARE_BRACKET\n"), coluna += strlen(yytext);}
-"]" {printf("R_SQUARE_BRACKET\n"), coluna += strlen(yytext);}
-"?" {printf("TERNARY_CONDITIONAL\n"), coluna += strlen(yytext);}
-"#" {printf("NUMBER_SIGN\n"), coluna++;}
-"->" {printf("POINTER\n"), coluna += strlen(yytext);}
-"printf" {printf("PRINTF\n"), coluna += strlen(yytext);}
-"scanf" {printf("SCANF\n"), coluna += strlen(yytext);}
-"define" {printf("DEFINE\n"), coluna += strlen(yytext);}
-"exit" {printf("EXIT\n"), coluna += strlen(yytext);}
+"void" {printarToken("VOID"), coluna += strlen(yytext);}
+"int" {printarToken("INT"), coluna += strlen(yytext);}
+"char" {printarToken("CHAR"), coluna += strlen(yytext);}
+"return" {printarToken("RETURN"), coluna += strlen(yytext);}
+"break" {printarToken("BREAK"), coluna += strlen(yytext);}
+"switch" {printarToken("SWITCH"), coluna += strlen(yytext);}
+"case" {printarToken("CASE"), coluna += strlen(yytext);}
+"default" {printarToken("DEFAULT"), coluna += strlen(yytext);}
+"do" {printarToken("DO"), coluna += strlen(yytext);}
+"while" {printarToken("WHILE"), coluna += strlen(yytext);}
+"for" {printarToken("FOR"), coluna += strlen(yytext);}
+"if" {printarToken("IF"), coluna += strlen(yytext);}
+"else" {printarToken("ELSE"), coluna += strlen(yytext);}
+"typedef" {printarToken("TYPEDEF"), coluna += strlen(yytext);}
+"struct" {printarToken("STRUCT"), coluna += strlen(yytext);}
+"+" {printarToken("PLUS"), coluna += strlen(yytext);}
+"-" {printarToken("MINUS"), coluna += strlen(yytext);}
+"*" {printarToken("MULTIPLY"), coluna += strlen(yytext);}
+"/" {printarToken("DIV"), coluna += strlen(yytext);}
+"%" {printarToken("REMAINDER"), coluna += strlen(yytext);}
+"++" {printarToken("INC"), coluna += strlen(yytext);}
+"--" {printarToken("DEC"), coluna += strlen(yytext);}
+"&" {printarToken("BITWISE_AND"), coluna += strlen(yytext);}
+"|" {printarToken("BITWISE_OR"), coluna += strlen(yytext);}
+"~" {printarToken("BITWISE_NOT"), coluna += strlen(yytext);}
+"^" {printarToken("BITWISE_XOR"), coluna += strlen(yytext);}
+"!" {printarToken("NOT"), coluna += strlen(yytext);}
+"&&" {printarToken("LOGICAL_AND"), coluna += strlen(yytext);}
+"||" {printarToken("LOGICAL_OR"), coluna += strlen(yytext);}
+"==" {printarToken("EQUAL"), coluna += strlen(yytext);}
+"!=" {printarToken("NOT_EQUAL"), coluna += strlen(yytext);}
+"<" {printarToken("LESS_THAN"), coluna += strlen(yytext);}
+">" {printarToken("GREATER_THAN"), coluna += strlen(yytext);}
+"<=" {printarToken("LESS_EQUAL"), coluna += strlen(yytext);}
+">=" {printarToken("GREATER_EQUAL"), coluna += strlen(yytext);}
+">>" {printarToken("R_SHIFT"), coluna += strlen(yytext);}
+"<<" {printarToken("L_SHIFT"), coluna += strlen(yytext);}
+"=" {printarToken("ASSIGN"), coluna += strlen(yytext);}
+"+=" {printarToken("ADD_ASSIGN"), coluna += strlen(yytext);}
+"-=" {printarToken("MINUS_ASSIGN"), coluna += strlen(yytext);}
+";" {printarToken("SEMICOLON"), coluna += strlen(yytext);}
+"," {printarToken("COMMA"), coluna += strlen(yytext);}
+":" {printarToken("COLON"), coluna += strlen(yytext);}
+"(" {printarToken("L_PAREN"), coluna += strlen(yytext);}
+")" {printarToken("R_PAREN"), coluna += strlen(yytext);}
+"{" {printarToken("L_CURLY_BRACKET"), coluna += strlen(yytext);}
+"}" {printarToken("R_CURLY_BRACKET"), coluna += strlen(yytext);}
+"[" {printarToken("L_SQUARE_BRACKET"), coluna += strlen(yytext);}
+"]" {printarToken("R_SQUARE_BRACKET"), coluna += strlen(yytext);}
+"?" {printarToken("TERNARY_CONDITIONAL"), coluna += strlen(yytext);}
+"#" {printarToken("NUMBER_SIGN"), coluna++;}
+"->" {printarToken("POINTER"), coluna += strlen(yytext);}
+"printf" {printarToken("PRINTF"), coluna += strlen(yytext);}
+"scanf" {printarToken("SCANF"), coluna += strlen(yytext);}
+"define" {printarToken("DEFINE"), coluna += strlen(yytext);}
+"exit" {printarToken("EXIT"), coluna += strlen(yytext);}
 
-0[x|X][0-9|a-f|A-F]+ {printf("NUM_HEXA(%s)\n", yytext), coluna += strlen(yytext);}
-0[1-7]+[0-7]+ {printf("NUM_OCTAL(%s)\n", yytext), coluna += strlen(yytext);}
-[0-9]+ {printf("NUM_INTEGER(%s)\n", yytext), coluna += strlen(yytext);}
+0[x|X][0-9|a-f|A-F]+ {printarToken("NUM_HEXA"); printf("(%s)", yytext); coluna += strlen(yytext);}
+0[1-7]+[0-7]+ {printarToken("NUM_OCTAL"); printf("(%s)", yytext); coluna += strlen(yytext);}
+[0-9]+ {printarToken("NUM_INTEGER"); printf("(%s)", yytext); coluna += strlen(yytext);}
 [a-z|A-Z|_]+[0-9|a-z|A-Z|_]* {
     if (strlen(yytext) !=0) {
-        printf("IDENTIFIER(%s)\n", yytext);
+        printarToken("IDENTIFIER"); printf("(%s)", yytext);
         coluna += strlen(yytext);
     } else {
         printarErroLongo(linha, coluna);
     }
 }
-\"[^\"\n]\" {printf("CHARACTER(%s)\n", yytext), coluna += strlen(yytext);}
-\"[^\"\n]+\" {printf("STRING(%s)\n", yytext), coluna += strlen(yytext);}
+\"[^\"\n]\" {printarToken("CHARACTER"); printf("(%s)", yytext); coluna += strlen(yytext);}
+\"[^\"\n]*\" {printarToken("STRING"); printarStringSemAspasDuplas(yytext); coluna += strlen(yytext);}
 "\n" {linha++, coluna=0;}
 " " {coluna++;}
+
+"//".* {coluna += strlen(yytext);}
+
+"/*" { 
+    abreComentario++;
+    if (abreComentario > 1) {
+        printarWarning(linha, coluna);
+    }
+}
+
+("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*"*/") {}
+
+"\a" {coluna += strlen(yytext);}
+"\b" {coluna += strlen(yytext);}
+"\f" {coluna += strlen(yytext);}
+"\r" {coluna += strlen(yytext);}
+"\t" {coluna = coluna + 4;}
+"\v" {coluna += strlen(yytext);}
+"\\" {coluna += strlen(yytext);}
+"\'" {coluna += strlen(yytext);}
+"\"" {coluna += strlen(yytext);}
+
+"\0" {coluna += strlen(yytext);}
+
 . {printarErro(linha, coluna, yytext), coluna += strlen(yytext);}
 
 %%
