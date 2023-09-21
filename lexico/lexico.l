@@ -41,32 +41,33 @@ void printarStringSemAspasDuplas(char* token) {
 }
 void printarUnterminatedComment(int linha, int coluna) {
     if (existePrimeiroToken == 0) {
-        printf("error:lexical:%d:%d: unterminated comment", linha, coluna); 
+        printf("error:lexical:%d:%d: unterminated comment", linha, coluna+=1); 
         existePrimeiroToken = 1; // atualiza o verificador indicando que já existe um primeiro token
     } else { 
-        printf("\nerror:lexical:%d:%d: unterminated comment", linha, coluna);
+        printf("\nerror:lexical:%d:%d: unterminated comment", linha, coluna+=1);
     }
 }
 
-void verificaWarnings(char* yytext, int linha, int coluna) {
+void verificaWarnings(char* yytext, int *linha, int *coluna) {
 
-    for(int i=2; i<strlen(yytext); i++) {
+    for(int i=2; i<=strlen(yytext); i++) {
 
         if(yytext[i] == '/') {
             if (yytext[i+1] == '*') {
                 if (yytext[i+2] != '/') {
-                    printf("\nwarning:%d:%d: '/*' within block comment", linha, coluna);
-                    coluna++;
+                    printf("\nwarning:%d:%d: '/*' within block comment", *linha, *coluna);
+                    *coluna = *coluna + 1;
                 }
             } else {
-                coluna++;
+                *coluna = *coluna + 1;
             }
         } else {
-            coluna++;
+            *coluna = *coluna + 1;
         }
         if (yytext[i] == '\n') {
-            coluna = 1;
-            linha++;
+            *coluna = 1;
+            // printf("-------%d\n", *linha);
+            *linha = *linha + 1;
         }
     }
 }
@@ -161,7 +162,7 @@ void printarWarning(int linha, int coluna) {
 
 "//".* {coluna += strlen(yytext);}
 
-("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*"*/") {verificaWarnings(yytext, linha, coluna);}
+("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*"*/") {verificaWarnings(yytext, &linha, &coluna);}
 
 ("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*) {printarUnterminatedComment(linha, coluna);}
 
