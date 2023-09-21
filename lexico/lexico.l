@@ -39,6 +39,46 @@ void printarStringSemAspasDuplas(char* token) {
     }
     printf(")");
 }
+void printarUnterminatedComment(int linha, int coluna) {
+    if (existePrimeiroToken == 0) {
+        printf("error:lexical:%d:%d: unterminated comment", linha, coluna); 
+        existePrimeiroToken = 1; // atualiza o verificador indicando que já existe um primeiro token
+    } else { 
+        printf("\nerror:lexical:%d:%d: unterminated comment", linha, coluna);
+    }
+}
+
+void verificaWarnings(char* yytext, int linha, int coluna) {
+
+    for(int i=2; i<strlen(yytext); i++) {
+
+        if(yytext[i] == '/') {
+            if (yytext[i+1] == '*') {
+                if (yytext[i+2] != '/') {
+                    printf("\nwarning:%d:%d: '/*' within block comment", linha, coluna);
+                    coluna++;
+                }
+            } else {
+                coluna++;
+            }
+        } else {
+            coluna++;
+        }
+        if (yytext[i] == '\n') {
+            coluna = 1;
+            linha++;
+        }
+    }
+}
+
+void printarWarning(int linha, int coluna) {
+    if (existePrimeiroToken == 0) {
+        printf("warning:%d:%d: '/*' within block comment", linha, coluna);
+        existePrimeiroToken = 1;
+    } else {
+        printf("\nwarning:%d:%d: '/*' within block comment", linha, coluna);
+    }
+}
 
 %}
 
@@ -102,10 +142,10 @@ void printarStringSemAspasDuplas(char* token) {
 "exit" {printarToken("EXIT"), coluna += strlen(yytext);}
 
 0[x|X][0-9|a-f|A-F]+ {printarToken("NUM_HEXA"); printf("(%s)", yytext); coluna += strlen(yytext);}
-0[1-7]+[0-7]+ {printarToken("NUM_OCTAL"); printf("(%s)", yytext); coluna += strlen(yytext);}
+0[1-7][0-7]* {printarToken("NUM_OCTAL"); printf("(%s)", yytext); coluna += strlen(yytext);}
 [0-9]+ {printarToken("NUM_INTEGER"); printf("(%s)", yytext); coluna += strlen(yytext);}
 [a-z|A-Z|_]+[0-9|a-z|A-Z|_]* {
-    if (strlen(yytext) !=0) {
+    if (strlen(yytext) <= 255) {
         printarToken("IDENTIFIER"); printf("(%s)", yytext);
         coluna += strlen(yytext);
     } else {
@@ -114,19 +154,14 @@ void printarStringSemAspasDuplas(char* token) {
 }
 \"[^\"\n]\" {printarToken("CHARACTER"); printf("(%s)", yytext); coluna += strlen(yytext);}
 \"[^\"\n]*\" {printarToken("STRING"); printarStringSemAspasDuplas(yytext); coluna += strlen(yytext);}
-"\n" {linha++, coluna=0;}
+"\n" {linha++, coluna=1;}
 " " {coluna++;}
 
 "//".* {coluna += strlen(yytext);}
 
-"/*" { 
-    abreComentario++;
-    if (abreComentario > 1) {
-        printarWarning(linha, coluna);
-    }
-}
+("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*"*/") {verificaWarnings(yytext, linha, coluna);}
 
-("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*"*/") {}
+("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*) {printarUnterminatedComment(linha, coluna);}
 
 "\a" {coluna += strlen(yytext);}
 "\b" {coluna += strlen(yytext);}
