@@ -144,6 +144,8 @@ void printarWarning(int linha, int coluna) {
 0[x|X][0-9|a-f|A-F]+ {printarToken("NUM_HEXA"); printf("(%s)", yytext); coluna += strlen(yytext);}
 0[1-7][0-7]* {printarToken("NUM_OCTAL"); printf("(%s)", yytext); coluna += strlen(yytext);}
 [0-9]+ {printarToken("NUM_INTEGER"); printf("(%s)", yytext); coluna += strlen(yytext);}
+
+
 [a-z|A-Z|_]+[0-9|a-z|A-Z|_]* {
     if (strlen(yytext) <= 255) {
         printarToken("IDENTIFIER"); printf("(%s)", yytext);
@@ -152,7 +154,7 @@ void printarWarning(int linha, int coluna) {
         printarErroLongo(linha, coluna);
     }
 }
-\"[^\"\n]\" {printarToken("CHARACTER"); printf("(%s)", yytext); coluna += strlen(yytext);}
+"\'""\\"?."\'"  {printarToken("CHARACTER"); printarStringSemAspasDuplas(yytext); coluna += strlen(yytext);}
 \"[^\"\n]*\" {printarToken("STRING"); printarStringSemAspasDuplas(yytext); coluna += strlen(yytext);}
 "\n" {linha++, coluna=1;}
 " " {coluna++;}
@@ -163,12 +165,7 @@ void printarWarning(int linha, int coluna) {
 
 ("/*"([^*]|[\n]|("*"+([^*/]|[\n])))*) {printarUnterminatedComment(linha, coluna);}
 
-"\a" {coluna += strlen(yytext);}
-"\b" {coluna += strlen(yytext);}
-"\f" {coluna += strlen(yytext);}
-"\r" {coluna += strlen(yytext);}
-"\t" {coluna = coluna + 4;}
-"\v" {coluna += strlen(yytext);}
+
 "\\" {coluna += strlen(yytext);}
 "\'" {coluna += strlen(yytext);}
 "\"" {coluna += strlen(yytext);}
