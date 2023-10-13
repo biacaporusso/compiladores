@@ -58,7 +58,7 @@ void removeElemento(Queue Q) {
     return;
 }
 
-int getItem(Queue Q) {
+int getToken(Queue Q) {
     Fila* fila = (Fila*) Q;
     if (fila->prim != NULL)
         return fila->prim->num;
@@ -67,15 +67,16 @@ int getItem(Queue Q) {
 }
 
 void liberaFila(Queue fila) {
-    Cell celula = getInicio(fila);
-    Cell celulaRemovida;
+    Fila* f = fila;
+    Celula* celula = f->prim;
+    Celula* celulaRemovida;
 
     // percorrendo a fila e dando free em todas as células
     while (celula != NULL) {
 
-        celulaRemovida = celula;
-        celula = getNext(celula);
-        free(celulaRemovida);
+        celulaRemovida = celula->prox;
+        free(celula);
+        celula = celulaRemovida;
     }
     // depois de ter liberado todas as células, libera a fila
     free(fila);

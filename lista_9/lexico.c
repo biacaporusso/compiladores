@@ -1,4 +1,5 @@
 #include "lexico.h"
+#include "sintatico.h"
 
 int edges[NUM_STATES][NUM_SYMBOLS] = {
     //               b  d  e  f  g  h  i  l  n  p  r  s  t  0  1  2  3  4  5  6  7  8  9  -  +  ;  =
@@ -126,6 +127,7 @@ void main() {
         }
 
         // mandar a fila pro sintatico
+        startSintatico(fila);
         liberaFila(fila);
     }
     if (last_final != 0) {

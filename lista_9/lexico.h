@@ -1,8 +1,8 @@
 #ifndef lexico_h
 #define lexico_h
 
-#include <stdbool.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include "fila.h"
 

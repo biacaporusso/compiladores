@@ -1,9 +1,15 @@
 CC = gcc
 
-obj = ex1.o
+obj = lexico.o fila.o sintatico.o
 
-ex1: $(obj)
-	$(CC) $(obj) -o ex1 -lm
+l9e1: $(obj)
+	$(CC) $(obj) -o l9e1 -lm
 
-ex1.o: ex1.c  
-	$(CC) -c ex1.c
+lexico.o: lexico.c  
+	$(CC) -c lexico.c
+
+fila.o: fila.c  
+	$(CC) -c fila.c
+
+sintatico.o: sintatico.c  
+	$(CC) -c sintatico.c
