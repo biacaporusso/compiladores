@@ -12,16 +12,27 @@
 
 int token;
 int flagErro = 0;
+int textoAntes = 0;
 
 void startSintatico(Queue fila) {
+    // printaFila(fila);
+    // return;
     token = getToken(fila);
+    // printf("token %d\n", token);
     S(fila);
     if (flagErro == 0) {
-        printf("CADEIA ACEITA");
+        if (textoAntes == 0) {
+            printf("CADEIA ACEITA");
+            textoAntes = 1;
+        } else {
+            printf("\nCADEIA ACEITA");
+        }
+        
     }
 }
 
 void advance(Queue fila) {
+    removeElemento(fila);
     token = getToken(fila);
 }
 
@@ -37,6 +48,7 @@ void S(Queue fila) {
     if (flagErro == 1) {
         return;
     }
+    //printf("token %d\n", token);
     switch(token) {
         case IF:
             eat(IF, fila); 
@@ -57,7 +69,13 @@ void S(Queue fila) {
             break;
         default:
             char esperado[20] = "if, begin, print";
-            printf("ERRO SINTATICO EM: %d ESPERADO: %s\n", token, esperado);
+            if (textoAntes == 0) {
+                printf("\nERRO SINTATICO EM: %d ESPERADO: %s", token, esperado);
+                textoAntes = 1;
+            } else {
+                printf("\nERRO SINTATICO EM: %d ESPERADO: %s", token, esperado);
+            }
+            
             flagErro = 1;
             break;
     }
@@ -67,6 +85,7 @@ void L(Queue fila) {
     if (flagErro == 1) {
         return;
     }
+    // printf("token %d\n", token);
     switch(token) {
         case END:
             eat(END, fila); 
@@ -79,9 +98,13 @@ void L(Queue fila) {
         default: 
             //char esperado = calloc(17, sizeof(char));
             char esperado[20] = "end, ;";
-            printf("ERRO SINTATICO EM: %d ESPERADO: %s\n", token, esperado);
+            if (textoAntes == 0) {
+                printf("\nERRO SINTATICO EM: %d ESPERADO: %s", token, esperado);
+                textoAntes = 1;
+            } else {
+                printf("\nERRO SINTATICO EM: %d ESPERADO: %s", token, esperado);
+            }
             flagErro = 1;
-            //error(token, esperado);
             break;
     }
 }
@@ -90,6 +113,7 @@ void E(Queue fila) {
     if (flagErro == 1) {
         return;
     }
+    // printf("token %d\n", token);
     eat(NUM, fila);
     eat(EQ, fila);
     eat(NUM, fila);

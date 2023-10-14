@@ -14,6 +14,19 @@ typedef struct {
     Celula *prim, *ult;
 } Fila;
 
+void printaFila(Queue Q) {
+
+    Fila* fila = (Fila*) Q;
+    Celula *celula = fila->prim;
+    printf("\n==== ");
+
+    for (int i=0; i<fila->tamanho; i++) {
+        printf("%d ", celula->num);
+        celula = celula->prox;
+    }
+    printf("\n\n");
+}
+
 Queue criaFila() {
 
     Fila *fila;
@@ -23,6 +36,7 @@ Queue criaFila() {
 }
 
 void inserirFila(Queue Q, int num) {
+    if (num == 28 || num == 29) return;
 
     Fila* fila = (Fila*) Q;
     Celula* novoEle = (Celula*) malloc(sizeof(Celula));
@@ -40,6 +54,8 @@ void inserirFila(Queue Q, int num) {
         (fila->ult)->prox = novoEle;
         fila->ult = novoEle;
     }
+
+    // printf("(INSERIDO %d)\n", fila->ult->num);
     fila->tamanho++;
 }
 
