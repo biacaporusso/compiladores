@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include "fila.h"
 
-void startSintatico();
-void advance();
+void startSintatico(Queue fila);
+void advance(Queue fila);
 void eat(int t, Queue fila);
-void S();
-void L();
-void E();
+void S(Queue fila);
+void L(Queue fila);
+void E(Queue fila);
 
 #endif
