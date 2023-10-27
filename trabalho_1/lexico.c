@@ -1,5 +1,5 @@
 #include "lexico.h"
-#include "sintatico.h"
+//#include "sintatico.h"
 
 int edges[][NUM_SYMBOLS] = {
     //                A   a   B   b   C   c   D   d   E   e   F   f   G   g   H   h   I   i   J   j   K   k   L   l   M   m   N   n   O   o   P   p   Q   q   R   r   S   s   T   t   U   u   V   v   W   w   X   x   Y   y   Z   z   0   1   2   3   4   5   6   7   8   9   ;   ,   :   .   [   ]   (   )   =   <   >   +   -   *   /  \n   _   {   }   "   espaco
@@ -191,14 +191,14 @@ int edges[][NUM_SYMBOLS] = {
 
     //               b  d  e  f  g  h  i  l  n  p  r  s  t  0  1  2  3  4  5  6  7  8  9  -  +  ;  =
 };
-int estadosFinais[NUM_ESTADOSFINAIS] = {3, 7, 11, 13, 18, 23, 24, 26, 27};
+int estadosFinais[NUM_ESTADOSFINAIS] = {10, 12, 21, 23, 25, 26, 33, 36, 39, 42, 45, 50, 57, 62, 67, 73, 76, 82, 85, 87, 99, 102, 105, 109, 113, 115, 118, 122, 127, 135, 143, 144, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 164, 165, 166, 168, 169, 171, 173, 174};
 // char reconhecida[200] = "";
 
 
 void main() {
 
     char entrada[100000];
-    int current_state = 1; printf("\n")
+    int current_state = 1; 
     int estadoDepois = 0;
     int last_final = 0;
     int i_recon = 0;
@@ -295,7 +295,7 @@ void main() {
 
         }
         // mandar a fila pro sintatico
-        startSintatico(fila);
+        // startSintatico(fila);
         liberaFila(fila);
     }
 
