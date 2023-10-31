@@ -1,67 +1,9 @@
 #include "sintatico.h"
 
-#define ALGORITMO 10
-#define ATE 12
-#define CARACTERE 21
-#define DE 23
-#define DIV 25
-#define E 26
-#define ENQUANTO 33
-#define ENTAO 36
-#define FIM 39
-#define FACA 42
-#define FALSO 45
-#define FUNCAO 50
-#define IMPRIMA 57
-#define INICIO 62
-#define INTEIRO 67
-#define LOGICO 73
-#define LEIA 76
-#define MATRIZ 82
-#define NAO 85
-#define OU 87
-#define PROCEDIMENTO 99
-#define PARA 102
-#define PASSO 105
-#define REAL 109
-#define REPITA 113
-#define SE 115
-#define SENAO 118
-#define TIPO 122
-#define VETOR 127
-#define VERDADEIRO 135
-#define VARIAVEIS 143
-#define NUMERO_INTEIRO 144
-#define REAL 146
-#define PONTO_E_VIRGULA 147
-#define VIRGULA 148
-#define DOIS_PONTOS 149
-#define PONTO 150
-#define ABRE_COLCHETES 151
-#define FECHA_COLCHETES 152
-#define ABRE_PARENTESES 153
-#define FECHA_PARENTESES 154
-#define IGUAL 155
-#define ESPACO_BRANCO 156
-#define DIFERENTE 157
-#define MAIOR 158
-#define MAIOR_IGUAL 159
-#define MENOR 160
-#define MENOR_IGUAL 161
-#define ATRIBUICAO 162
-#define MAIS 163
-#define MENOS 164
-#define VEZES 165
-#define DIVISAO 166
-#define COMENTARIO_DE_LINHA 168
-#define IDENTIFICADOR 169
-#define COMENTARIO_DE_BLOCO 171
-#define STRING 173
-#define PULA_LINHA 174
-
 int token;
 int flagErro = 0;
 int textoAntes = 0;
+int linha=0, coluna=0;
 
 void startSintatico(Queue fila) {
     // printaFila(fila);
@@ -121,6 +63,9 @@ void DeclaraProcedimento(Queue fila) {
 }
 
 void DeclaraFuncao(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
     eat(FUNCAO, fila);
     eat(IDENTIFICADOR, fila);
     Parametros(fila);
@@ -134,54 +79,357 @@ void DeclaraFuncao(Queue fila) {
 }
 
 void Parametros(Queue fila) {
-    eat(ABRE_PARENTESES, fila);
-    DeclaraIdentificador(fila);
-    eat(FECHA_PARENTESES, fila);
-}
-void BlocoVariaveis(Queue fila) {
-    eat(VARIAVEIS, fila);
-    Declaracoes(fila);
-    // verificar a transição vazia
-}
-
-void L(Queue fila) {
     if (flagErro == 1) {
         return;
     }
-    // printf("token %d\n", token);
     switch(token) {
-        case END:
-            eat(END, fila); 
+        case ABRE_PARENTESES:
+            eat(ABRE_PARENTESES, fila);
+            DeclaraIdentificador(fila);
+            eat(FECHA_PARENTESES, fila);
             break;
-        case SEMI:
-            eat(SEMI, fila); 
-            S(fila); 
-            L(fila); 
+        default:
+            break; // transição vazia -> não dá erro
+    }
+}
+
+void BlocoVariaveis(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    switch(token) {
+        case VARIAVEIS:
+            eat(VARIAVEIS, fila);
+            Declaracoes(fila);
             break;
-        default: 
-            //char esperado = calloc(17, sizeof(char));
-            char esperado[20] = "end, ;";
+        default:
+            break; // transição vazia -> não dá erro
+    }
+}
+
+void DeclaraTipo(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    eat(TIPO, fila);
+    eat(IDENTIFICADOR, fila);
+    eat(IGUAL, fila);
+    VetorMatriz(fila);
+    eat(ABRE_COLCHETES, fila);
+    Dimensao(fila);
+    eat(FECHA_COLCHETES, fila);
+    TipoBasico(fila);
+    eat(PONTO_E_VIRGULA, fila);
+}
+
+void DeclaraVariaveis(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    switch(token) {
+        case INTEIRO:
+            eat(INTEIRO, fila);
+            eat(DOIS_PONTOS, fila);
+            DeclaraIdentificador(fila);
+            eat(PONTO_E_VIRGULA, fila);
+            break;
+        case REAL:
+            eat(REAL, fila);
+            eat(DOIS_PONTOS, fila);
+            DeclaraIdentificador(fila);
+            eat(PONTO_E_VIRGULA, fila);
+            break;
+        case CARACTERE:
+            eat(CARACTERE, fila);
+            eat(DOIS_PONTOS, fila);
+            DeclaraIdentificador(fila);
+            eat(PONTO_E_VIRGULA, fila);
+            break;
+        case LOGICO:
+            eat(LOGICO, fila);
+            eat(DOIS_PONTOS, fila);
+            DeclaraIdentificador(fila);
+            eat(PONTO_E_VIRGULA, fila);
+            break;
+        case IDENTIFICADOR:
+            eat(IDENTIFICADOR, fila);
+            eat(DOIS_PONTOS, fila);
+            DeclaraIdentificador(fila);
+            eat(PONTO_E_VIRGULA, fila);
+            break;
+        default:
             if (textoAntes == 0) {
-                printf("\nERRO SINTATICO EM: %d ESPERADO: %s", token, esperado);
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
                 textoAntes = 1;
             } else {
-                printf("\nERRO SINTATICO EM: %d ESPERADO: %s", token, esperado);
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
             }
             flagErro = 1;
             break;
     }
 }
 
-void E(Queue fila) {
+// verificar -> talvez precise de if antes do switch
+void DeclaraIdentificador(Queue fila) {
     if (flagErro == 1) {
         return;
     }
-    // printf("token %d\n", token);
-    eat(NUM, fila);
-    eat(EQ, fila);
-    eat(NUM, fila);
+    eat(IDENTIFICADOR, fila);
+    switch(token) {
+        case VIRGULA:
+            eat(VIRGULA, fila);
+            DeclaraIdentificador(fila);
+            break;
+        default: 
+            if (textoAntes == 0) {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+                textoAntes = 1;
+            } else {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+            }
+            flagErro = 1;
+            break;
+    }
 }
 
-/* error() {
-    print("ERRO SINTATICO EM: %s ESPERADO: %s\n", token, esperado);
-} */
+void VetorMatriz(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    switch(token) {
+        case VETOR:
+            eat(VETOR, fila);
+            break;
+        case MATRIZ:
+            eat(MATRIZ, fila);
+            break;
+        default: 
+            if (textoAntes == 0) {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+                textoAntes = 1;
+            } else {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+            }
+            flagErro = 1;
+            break;
+    }
+}
+
+void Dimensao(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    eat(NUMERO_INTEIRO, fila);
+    eat(DOIS_PONTOS, fila);
+    eat(NUMERO_INTEIRO, fila);
+    switch (token) {
+    case VIRGULA:
+        eat(VIRGULA, fila);
+        Dimensao(fila);
+        break;
+    default:
+        if (textoAntes == 0) {
+            printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+                textoAntes = 1;
+        } else {
+            printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+        }
+        flagErro = 1;
+        break;
+    }
+}
+
+void TipoBasico(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    switch(token) {
+        case INTEIRO:
+            eat(INTEIRO, fila);
+            break;
+        case REAL:
+            eat(REAL, fila);
+            break;
+        case CARACTERE:
+            eat(CARACTERE, fila);
+            break;
+        case LOGICO:
+            eat(LOGICO, fila);
+            break;
+        case IDENTIFICADOR:
+            eat(IDENTIFICADOR, fila);
+            break;
+        default:
+            if (textoAntes == 0) {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+                textoAntes = 1;
+            } else {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+            }
+            flagErro = 1;
+            break;
+    }
+}
+
+void BlocoComandos(Queue fila) {
+    eat(INICIO, fila);
+    ListaComandos(fila);
+    eat(FIM, fila);
+} 
+
+void Comandos(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    switch(token) {
+        case IDENTIFICADOR:
+            eat(IDENTIFICADOR, fila);
+            // verificar
+            eat(ABRE_PARENTESES, fila);
+            ExprIter(fila);
+            eat(FECHA_PARENTESES, fila);
+            break;
+        case SE:
+            eat(SE, fila);
+            Expressao(fila);
+            eat(ENTAO, fila);
+            ListaComandos(fila);
+            // verificar
+            break;
+        case ENQUANTO:
+            eat(ENQUANTO, fila);
+            Expressao(fila);
+            eat(FACA, fila);
+            ListaComandos(fila);
+            eat(FIM, fila);
+            eat(ENQUANTO, fila);
+            break;
+        case PARA:
+            eat(PARA, fila);
+            eat(IDENTIFICADOR, fila);
+            eat(DE, fila);
+            Expressao(fila);
+            eat(ATE, fila);
+            Expressao(fila);
+            // verificar
+            break;
+        case REPITA:
+            eat(REPITA, fila);
+            ListaComandos(fila);
+            eat(ATE, fila);
+            Expressao(fila);
+            break;
+        case LEIA:
+            eat(LEIA, fila);
+            eat(ABRE_PARENTESES, fila);
+            Variavel(fila);
+            eat(FECHA_PARENTESES, fila);
+            break;
+        case IMPRIMA:
+            eat(IMPRIMA, fila);
+            eat(ABRE_PARENTESES, fila);
+            ExprIter(fila);
+            eat(FECHA_PARENTESES, fila);
+            break;
+        default:
+            if (textoAntes == 0) {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+                textoAntes = 1;
+            } else {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+            }
+            flagErro = 1;
+            break;
+    }
+}
+
+void ExpressaoSimples(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    switch(token) {
+        case MAIS:
+            eat(MAIS, fila);
+            Termo(fila);
+        case MENOS:
+            eat(MENOS, fila);
+            Termo(fila);
+        default:
+            if (textoAntes == 0) {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+                textoAntes = 1;
+            } else {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+            }
+            flagErro = 1;
+            break;
+    }
+}
+
+void Fator(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    switch(token) {
+        case ABRE_PARENTESES:
+            eat(ABRE_PARENTESES, fila);
+            Expressao(fila);
+            eat(FECHA_PARENTESES, fila);
+            break;
+        case NUMERO_INTEIRO:
+            eat(NUMERO_INTEIRO, fila);
+            break;
+        case NUMERO_REAL:
+            eat(NUMERO_REAL, fila);
+            break;
+        case VERDADEIRO:
+            eat(VERDADEIRO, fila);
+            break;
+        case FALSO:
+            eat(FALSO, fila);
+            break;
+        case STRING:
+            eat(STRING, fila);
+            break;
+        case IDENTIFICADOR:
+            eat(IDENTIFICADOR, fila);
+            eat(ABRE_PARENTESES, fila);
+            ExprIter(fila);
+            eat(FECHA_PARENTESES, fila);
+            break;
+        default:
+            if (textoAntes == 0) {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+                textoAntes = 1;
+            } else {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+            }
+            flagErro = 1;
+            break;
+    }
+}
+
+void Variavel(Queue fila) {
+    if (flagErro == 1) {
+        return;
+    }
+    eat(IDENTIFICADOR, fila);
+    // verificar se precisa de if
+    switch(token) {
+        case ABRE_COLCHETES:
+            eat(ABRE_COLCHETES, fila);
+            ExprIter(fila);
+            eat(FECHA_COLCHETES, fila);
+            break;
+        default:
+            if (textoAntes == 0) {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+                textoAntes = 1;
+            } else {
+                printf("\nERRO DE SINTAXE. Linha: %d Coluna: %d -> '%s'", linha, coluna, token);
+            }
+            flagErro = 1;
+            break;
+    }
+}
+
