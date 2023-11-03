@@ -197,8 +197,9 @@ int estadosFinais[NUM_ESTADOSFINAIS] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1
 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 
 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 
 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 
-156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 168, 169};
+156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 168, 169, 171, 173};
 
+char stringToken[1000];
 
 void main() {
 
@@ -207,9 +208,10 @@ void main() {
     int estadoDepois = 0;
     int last_final = 0;
     int i_recon = 0;
-    // int control = 0;
-    int i, size, lastIndex;
-    // bool primeiraLinha = true;
+    int control = 0;
+    int i, size, lastIndex, j;
+    int inicioSimbolo=1, fimSimbolo=1;
+    int linha=1;
 
     // loop percorrer string de entrada
     Queue fila = criaFila();
@@ -229,7 +231,7 @@ void main() {
                 continue;
             }  */
             int colunaSimbolo = percorreVetor(entrada[i]);  //
-
+             
             // se existir o simbolo
             if (colunaSimbolo >= 0) {
                 estadoDepois = edges[current_state][colunaSimbolo];
@@ -238,7 +240,8 @@ void main() {
                 if (estadoDepois > 0) {
                     current_state = estadoDepois;
                     // simboloReconhecido(i_recon, entrada[i]);
-                    // i_recon++;
+                    i_recon++; // novo
+                    //printf("existe simbolo e transicao, i_recon = %d\n", i_recon);
                     i++;
                     if (ehEstadoFinal(estadoDepois)) {
                         // printf("Estado depois é estado final %d\n", estadoDepois);
@@ -246,12 +249,30 @@ void main() {
                         lastIndex = i;
                         // verificaToken(last_final);
                     }
-                    // control = 1;
                 } else {
-                    // printf(" Transição nao exite %d -> %c\n", last_final, entrada[i]);
                     if (last_final != 0) {
-                        if(last_final != 168 && last_final != 156)
-                            inserirFila(fila, last_final);
+                        //printf("nao tem mais transicao e eh estado final, i_recon = %d\n", i_recon);
+                        if(last_final != 156) {
+                            if(last_final != 168 || last_final != 167) {
+                                printf("\n\nlast final = %d", last_final);
+                                fimSimbolo = fimSimbolo + i_recon; // novo
+                                //printf("\ninicio = %d fim = %d", inicioSimbolo, fimSimbolo);
+                                //printf("\nini0=%d\n", inicioSimbolo);
+                                getStringTokenLexico(entrada, inicioSimbolo, fimSimbolo);
+                                inserirFila(fila, last_final, stringToken, inicioSimbolo, fimSimbolo, linha);
+                                for (j = 0; j < strlen(stringToken); j++) stringToken[j] = '\0';
+                                i_recon=0;
+                                inicioSimbolo = fimSimbolo;
+                            } else {
+                                fimSimbolo = fimSimbolo + i_recon; // novo
+                                i_recon=0;
+                                inicioSimbolo = fimSimbolo;  
+                            }
+                        } else {
+                            fimSimbolo = fimSimbolo + i_recon; // novo
+                            i_recon=0;
+                            inicioSimbolo = fimSimbolo;  
+                        }
                         // printf("\n ---- last final = %d %d\n", last_final, i);
                     } else {
                         // printf("erro = %c\n", entrada[i]);
@@ -261,34 +282,43 @@ void main() {
                     }
                     current_state = 1;
                     last_final = 0;
-                    // if (control == 1) {
+                    //if (control == 1) {
                     //     strcat(reconhecida, "\n");
                     //     i_recon++;
-                    // }
-                    // control = 1;
+                    //}
+                    //control = 1;
                 }
 
             } else {
                 if (last_final != 0) {
-                    if(last_final != 168 && last_final != 156) // comentario de linha
-                        inserirFila(fila, last_final);
-                    // printf(">>>>>> last final = %d %d\n", last_final, i);
+                    //printf("nao tem o prox simbolo e eh estado final, i_recon = %d\n", i_recon);
+                    if(last_final != 156) {
+                            if(last_final != 168 || last_final != 167) {
+                                printf("\n\nlast final DOIS = %d", last_final);
+                                fimSimbolo = fimSimbolo + i_recon; // novo
+                                //printf("\ninicio = %d fim = %d", inicioSimbolo, fimSimbolo);
+                                //printf("\nini0=%d\n", inicioSimbolo);
+                                getStringTokenLexico(entrada, inicioSimbolo, fimSimbolo);
+                                inserirFila(fila, last_final, stringToken, inicioSimbolo, fimSimbolo, linha);
+                                for (j = 0; j < strlen(stringToken); j++) stringToken[j] = '\0';
+                                i_recon=0;
+                                inicioSimbolo = fimSimbolo;
+                            } else {
+                                fimSimbolo = fimSimbolo + i_recon; // novo
+                                i_recon=0;
+                                inicioSimbolo = fimSimbolo;  
+                            }
+                        } else {
+                            fimSimbolo = fimSimbolo + i_recon; // novo
+                            i_recon=0;
+                            inicioSimbolo = fimSimbolo;  
+                        }
                     i++;
                 } else {
-                    // printf(">> erro = %c\n", entrada[i]);
                     i = lastIndex + 1;
                     lastIndex = i;
-                    // printf(">> corrigido i = %d\n", i);
                 }
-                // i++;
-                // if (control == 1) {
-                //     strcat(reconhecida, "\n");
-                //     i_recon++;
-                // }
-                // control = 1;
-                // strcat(reconhecida, "ERRO");
-                // i_recon = i_recon + 4;
-                printf("ERRO LEXICO. Linha: Coluna:  -> 'token'");
+                printf("ERRO LEXICO. Linha: %d Coluna: %d -> '%s'", linha, inicioSimbolo, stringToken);
                 return;
                 current_state = 1;
                 last_final = 0;
@@ -296,20 +326,37 @@ void main() {
         
         }
         if (last_final != 0) {
-            if(last_final != 168 && last_final != 156) // comentario de linha, \n e espaço
-                inserirFila(fila, last_final);
-            //primeiraLinha = false;
-            //printf("last final = %d\n", last_final);
-
+            if(last_final != 156) {
+                if(last_final != 168) {
+                    printf("\n\nlast final TRES= %d", last_final);
+                    fimSimbolo = fimSimbolo + i_recon; // novo
+                    //printf("\ninicio = %d fim = %d", inicioSimbolo, fimSimbolo);
+                    //printf("\nini0=%d\n", inicioSimbolo);
+                    getStringTokenLexico(entrada, inicioSimbolo, fimSimbolo);
+                    inserirFila(fila, last_final, stringToken, inicioSimbolo, fimSimbolo, linha);
+                    i_recon=0;
+                    inicioSimbolo = fimSimbolo;
+                } else {
+                    printf("\n\nlast final QUATRO= %d", last_final);
+                    fimSimbolo = fimSimbolo + i_recon; // novo
+                    i_recon=0;
+                    inicioSimbolo = fimSimbolo;  
+                }
+            } else {
+                printf("\n\nlast final CINCO= %d", last_final);
+                fimSimbolo = fimSimbolo + i_recon; // novo
+                i_recon=0;
+                inicioSimbolo = fimSimbolo;  
+            }
         }
-        // mandar a fila pro sintatico
-        /* printaFila(fila);
-        printf("lexico indo pro sintatico\n");
-        liberaFila(fila);
-        startSintatico(fila); */
+        //printf("inicioSimbolo = %d\nfimSimbolo=%d\n\n", inicioSimbolo, fimSimbolo);
+        inicioSimbolo=1;
+        fimSimbolo=0;
+        linha++;
     }
-    printaFila(fila);
+    //printaFila(fila);
     //printf("lexico indo pro sintatico\n");
+    //printf("token = %s", stringToken);
     startSintatico(fila);
     liberaFila(fila);
 
@@ -336,4 +383,36 @@ bool ehEstadoFinal(int estadoDepois) {
         }
     }
     return false;
+}
+
+void getStringTokenLexico(char* entrada, int i, int fimSimbolo) {
+    int contador;
+    printf("\nini %d fim %d\n", i, fimSimbolo);
+    int j=0;
+    int aux=0;
+
+    for (aux=0; aux <= strlen(stringToken); aux++) 
+        stringToken[aux] = '\0';
+
+    for (contador=i; contador<fimSimbolo; contador++) {
+        if(entrada[contador-1] == '/' && entrada[contador] == '/') {
+            printf("========AAAAAAAAAAAAAAAAAA\n");
+            //return;
+        }
+        printf("%c", entrada[contador-1]);
+        stringToken[j] = entrada[contador];
+        j++;
+    }
+    stringToken[j] = '\0';
+    //printf("token = %s\n", stringToken);
+
+    /* i--;
+    fimSimbolo--;
+    for (contador=i; contador<=fimSimbolo; contador++) {
+        //printf("%c", entrada[contador]);
+        stringToken[contador-i] = entrada[contador];
+    }
+    stringToken[contador-i] = '\0';
+    //printf("stringToken = %s\n", stringToken); */
+    
 }

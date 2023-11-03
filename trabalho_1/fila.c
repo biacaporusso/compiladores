@@ -6,6 +6,9 @@
 
 typedef struct celula {
     int num;
+    char stringToken[1000];
+    int inicioColuna, fimColuna; // para conseguir printar o conteudo do token
+    int linha; // para caso der erro, conseguir identificar em qual linha e coluna que foi
     struct celula *prox;
 } Celula;
 
@@ -18,10 +21,10 @@ void printaFila(Queue Q) {
 
     Fila* fila = (Fila*) Q;
     Celula *celula = fila->prim;
-    printf("\n==== ");
 
     for (int i=0; i<fila->tamanho; i++) {
-        printf("%d ", celula->num);
+        //printf("\n==== ");
+        printf("\n%s ", celula->stringToken);
         celula = celula->prox;
     }
     printf("\n\n");
@@ -35,13 +38,17 @@ Queue criaFila() {
     return(fila);
 }
 
-void inserirFila(Queue Q, int num) {
-    if (num == 28 || num == 29) return;
+void inserirFila(Queue Q, int num, char* string, int inicioColuna, int fimColuna, int linha) {
+    //if (num == 28 || num == 29) return;
 
     Fila* fila = (Fila*) Q;
     Celula* novoEle = (Celula*) malloc(sizeof(Celula));
 
     novoEle->num = num;
+    strcpy(novoEle->stringToken, string);
+    novoEle->inicioColuna = inicioColuna;
+    novoEle->fimColuna = fimColuna;
+    novoEle->linha = linha;
     novoEle->prox = NULL;
 
     if(fila->tamanho == 0) {
@@ -55,7 +62,7 @@ void inserirFila(Queue Q, int num) {
         fila->ult = novoEle;
     }
 
-    // printf("(INSERIDO %d)\n", fila->ult->num);
+    //printf("(INSERIDO %d)\n", fila->ult->num);
     fila->tamanho++;
 }
 
@@ -80,6 +87,38 @@ int getToken(Queue Q) {
         return fila->prim->num;
     else   
         return -999999;
+}
+
+int getLinhaToken(Queue Q) {
+    Fila* fila = (Fila*) Q;
+    if (fila->prim != NULL)
+        return fila->prim->linha;
+    else   
+        return -8888888;
+}
+
+int getColunaInicialToken(Queue Q) {
+    Fila* fila = (Fila*) Q;
+    if (fila->prim != NULL)
+        return fila->prim->inicioColuna;
+    else   
+        return -7777777;
+}
+
+char* getStringToken(Queue Q) {
+    Fila* fila = (Fila*) Q;
+    if (fila->prim != NULL)
+        return fila->prim->stringToken;
+    else   
+        return NULL;
+}
+
+int getColunaFinalToken(Queue Q) {
+    Fila* fila = (Fila*) Q;
+    if (fila->prim != NULL)
+        return fila->prim->fimColuna;
+    else   
+        return -6666666;
 }
 
 void liberaFila(Queue fila) {

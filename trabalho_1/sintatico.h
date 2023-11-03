@@ -90,5 +90,6 @@ void Termo(Queue fila);
 void Fator(Queue fila);
 void Variavel(Queue fila);
 void ExprIter(Queue fila);
+//char* printarToken(char* entrada, int colunaInicialToken, int colunaFinalToken) ;
 
 #endif
