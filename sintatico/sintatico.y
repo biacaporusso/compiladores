@@ -1,45 +1,39 @@
 %{
-    /* definitions */
+#include<stdio.h>
+#include<string.h>
+#include<stdarg.h>
 
-    #include <stdio.h>
-    #include <string.h>
-    #include <stdarg.h>
+extern char* yytext;
+extern int yylex();
 
-    extern char* yytext;
-    extern int yylex();
+void yyerror(char *s);
+FILE* input_file = NULL;
 
-    void yyerror(char* s);
-    FILE* input_file = NULL;
+extern int coluna;
+extern int linha;
 
-    extern int linha;
-    extern int coluna;
-
-    void print_line(FILE* input, int n){
-        int i = 1;
-        char c;
-        fseek(input, 0, SEEK_SET);
-        while(i < n){
-            c = fgetc(input);
-            if(c == EOF){
-                break;
-            }
-            else if(c == '\n'){
-                i++;
-            }
+void print_line(FILE* input, int n){
+	int i = 1;
+	char c;
+	fseek(input, 0, SEEK_SET);
+	while(i < n){
+		c = fgetc(input);
+		if(c == EOF){
+            break;
         }
-        c = fgetc(input);
-        while(c != '\n' && c != EOF){
-            printf("%c", c);
-            c = fgetc(input);
+		else if(c == '\n'){
+            i++;
         }
-        printf("\n");
-    }
-%}
-
-%union {
-    int num;
-    char sym;
+	}
+	c = fgetc(input);
+	while(c != '\n' && c != EOF){
+		printf("%c", c);
+		c = fgetc(input);
+	}
+	printf("\n");
 }
+
+%}
 
 %token VOID
 %token INT 
@@ -114,268 +108,267 @@
 
 %%
 
-programa:
-    program programa END_OF_FILE { printf("SUCCESSFUL COMPILATION."); return 0; }
-    | program END_OF_FILE { printf("SUCCESSFUL COMPILATION."); return 0; }
+programa: 
+    program programa END_OF_FILE {printf("SUCCESSFUL COMPILATION."); return 0;}
+	| program END_OF_FILE {printf("SUCCESSFUL COMPILATION."); return 0;}
 ;
 
 program: 
     declaracao {}
-    | funcao {}
+	| funcao {}
 ;
 
 declaracao: 
     NUMBER_SIGN DEFINE IDENTIFIER expressao {}
-    | declaracao_variaveis {}
-    | declaracao_prototipos {}
+    | declaracao_var {}
+    | declaracao_prot {}
 ;
 
-funcao:
-    tipo pointer IDENTIFIER parametros L_CURLY_BRACKET declaracao_variaveis_func comandos R_CURLY_BRACKET {}
+funcao: 
+    tipo pointer IDENTIFIER parametros L_CURLY_BRACKET dec_var_func comandos R_CURLY_BRACKET {}
 ;
 
-declaracao_variaveis_func: 
-    declaracao_variaveis declaracao_variaveis_func {}
-    | {}
+dec_var_func: 
+    declaracao_var dec_var_func	{}
+	| {}
 ;
 
-declaracao_variaveis: 
+declaracao_var: 
     tipo dec_var SEMICOLON {}
 ;
 
-dec_var:
+dec_var: 
     pointer IDENTIFIER array ASSIGN atribuicao dec_var_aux {}
     | pointer IDENTIFIER array dec_var_aux {}
 ;
 
-dec_var_aux:
+dec_var_aux: 
     COMMA dec_var {}
     | {}
 ;
 
-declaracao_prototipos:
+declaracao_prot: 
     tipo pointer IDENTIFIER parametros SEMICOLON {}
 ;
 
-parametros:
+parametros: 
     L_PAREN param R_PAREN {}
-    | L_PAREN R_PAREN {}
+	| L_PAREN R_PAREN {}
 ;
 
 param: 
-    tipo pointer IDENTIFIER array param_aux {}
+    tipo pointer IDENTIFIER array param_aux	{}
 ;
 
-param_aux:
-    COMMA param {}
-    | {}
+param_aux: 
+    COMMA param	{}
+	| {}
 ;
 
-array:
+array: 
     L_SQUARE_BRACKET expressao R_SQUARE_BRACKET array {}
-    | {}
+	 | {}
 ;
 
 tipo: 
     INT {}
-    | CHAR {}
-    | VOID {}
+	| CHAR {}
+	| VOID {}
 ;
 
 bloco: 
     L_CURLY_BRACKET comandos R_CURLY_BRACKET {}
 ;
 
-comandos:
-    lista_de_comandos comandos {}
-    | lista_de_comandos {}
+comandos: 
+    lista_comandos comandos	{}
+	| lista_comandos {}
 ;
 
-lista_de_comandos:
+lista_comandos: 
     DO bloco WHILE L_PAREN expressao R_PAREN SEMICOLON {}
-    | IF L_PAREN expressao R_PAREN bloco ELSE else_exp {}
-    | WHILE L_PAREN expressao R_PAREN bloco {}
-    | FOR L_PAREN exp_opcional SEMICOLON exp_opcional SEMICOLON exp_opcional R_PAREN bloco {}
+	| IF L_PAREN expressao R_PAREN bloco else_exp	{}
+	| WHILE L_PAREN expressao R_PAREN bloco {}
+	| FOR L_PAREN exp_opcional SEMICOLON exp_opcional SEMICOLON exp_opcional R_PAREN bloco {}
     | PRINTF L_PAREN STRING printf_exp R_PAREN SEMICOLON {}
-    | SCANF L_PAREN STRING COMMA BITWISE_AND IDENTIFIER R_PAREN SEMICOLON {}
+	| SCANF L_PAREN STRING COMMA BITWISE_AND IDENTIFIER R_PAREN SEMICOLON {}
     | EXIT L_PAREN expressao R_PAREN SEMICOLON {}
-    | RETURN exp_opcional SEMICOLON {}
-    | expressao SEMICOLON {}
-    | SEMICOLON {}
-    | bloco {}
+	| RETURN exp_opcional SEMICOLON {}
+	| expressao SEMICOLON {}
+	| SEMICOLON {}
+	| bloco	{}
 ;
 
-printf_exp:
-    COMMA expressao {}
-    | {}
+printf_exp: 
+    COMMA expressao	{}
+	| {}
 ;
 
-else_exp:
+else_exp: 
     ELSE bloco {}
-    | {}
+	| {}
 ;
 
-exp_opcional:
+exp_opcional: 
     expressao {}
-    | {}
+	| {}
 ;
 
-expressao:
+expressao: 
     atribuicao {}
     | atribuicao COMMA expressao {}
 ;
 
-atribuicao:
-    expressao_condicional {}
-    | expressao_unaria atribuicao_aux atribuicao {}
+atribuicao: 
+    exp_cond {}
+    | exp_unaria atribuicao_aux atribuicao {}
 ;
 
-atribuicao_aux:
+atribuicao_aux: 
     ASSIGN {}
-    | ADD_ASSIGN {}
-    | MINUS_ASSIGN {}
+	| ADD_ASSIGN {}
+	| MINUS_ASSIGN {}
 ;
 
-expressao_condicional:
-    expressao_or_logico {}
-    | expressao_or_logico TERNARY_CONDITIONAL expressao COLON expressao_condicional {}
+exp_cond: 
+    exp_or_log {}
+    | exp_or_log TERNARY_CONDITIONAL expressao COLON exp_cond {}
 ;
 
-expressao_or_logico:
-    expressao_and_logico {}
-    | expressao_and_logico LOGICAL_OR expressao_or_logico {}
+exp_or_log: 
+    exp_and_log {}
+    | exp_and_log LOGICAL_OR exp_or_log {}
 ;
 
-expressao_and_logico:
-    expressao_or {}
-    | expressao_or LOGICAL_AND expressao_and_logico {}
+exp_and_log: 
+    exp_or {}
+    | exp_or LOGICAL_AND exp_and_log {}
 ;
 
-expressao_or:
-    expressao_xor {}
-    | expressao_xor BITWISE_OR expressao_or {}
+exp_or: 
+    exp_xor {}
+    | exp_xor BITWISE_OR exp_or {}
 ;
 
-expressao_xor:
-    expressao_and {}
-    | expressao_and BITWISE_XOR expressao_xor {}
+exp_xor: 
+    exp_and {}
+    | exp_and BITWISE_XOR exp_xor {}
 ;
 
-expressao_and:
-    expressao_igualdade {}
-    | expressao_igualdade BITWISE_AND expressao_and {}
+exp_and: 
+    exp_igualdade {}
+    | exp_igualdade BITWISE_AND exp_and {}
 ;
 
-expressao_igualdade:
-    expressao_relacional {}
-    | expressao_relacional exp_igualdade_aux expressao_igualdade {}
+exp_igualdade: 
+    exp_relacional {}
+    | exp_relacional exp_igualdade_aux exp_igualdade {}
 ;
 
 exp_igualdade_aux: 
     EQUAL {}
-    | NOT_EQUAL {}
+	| NOT_EQUAL {}
 ;
 
-expressao_relacional:
-    expressao_shift {}
-    | expressao_shift exp_relacional_aux expressao_relacional {}
+exp_relacional: 
+    exp_shift {}
+	| exp_shift exp_relacional_aux exp_relacional {}
 ;
 
-exp_relacional_aux:
+exp_relacional_aux: 
     LESS_THAN {}
-    | LESS_EQUAL {}
-    | GREATER_THAN {}
-    | GREATER_EQUAL {}
+	| LESS_EQUAL {}
+	| GREATER_THAN {}
+	| GREATER_EQUAL {}
 ;
 
-expressao_shift:
-    expressao_add {}
-    | expressao_add exp_shift_aux expressao_shift {}
+exp_shift: 
+    exp_add {}
+	| exp_add exp_shift_aux exp_shift {}
 ;
 
 exp_shift_aux: 
     L_SHIFT {}
-    | R_SHIFT {}
+	| R_SHIFT {}
 ;
 
-expressao_add:
-    expressao_mult {}
-    | expressao_mult exp_add_aux expressao_add {}
+exp_add: 
+    exp_mult {}
+	| exp_mult exp_add_aux exp_add {}
 ;
 
 exp_add_aux: 
     PLUS {}
-    | MINUS {}
+	| MINUS {}
 ;
 
-expressao_mult:
-    expressao_cast {}
-    | expressao_cast exp_mult_aux expressao_mult {}
+exp_mult: 
+    exp_cast {}
+	| exp_cast exp_mult_aux exp_mult {}
 ;
 
-exp_mult_aux:
+exp_mult_aux: 
     MULTIPLY {}
-    | DIV {}
-    | REMAINDER {}
+	| DIV {}
+	| REMAINDER {}
 ;
 
-expressao_cast:
-    expressao_unaria {}
-    | L_PAREN tipo pointer R_PAREN expressao_cast {}
+exp_cast: 
+    exp_unaria {}
+	| L_PAREN tipo pointer R_PAREN exp_cast {}
 ;
 
-expressao_unaria:
-    expressao_posfixa {}
-    | INC expressao_unaria {}
-    | DEC expressao_unaria {}
-    | exp_unaria_aux expressao_cast {}
+exp_unaria: 
+    exp_posfixa	{}
+	| INC exp_unaria {}
+	| DEC exp_unaria {}
+	| exp_un_aux exp_cast {}
 ;
 
-exp_unaria_aux:
+exp_un_aux: 
     BITWISE_AND {}
-    | PLUS {}
-    | MINUS {}
-    | BITWISE_NOT {}
-    | NOT {}
+	| PLUS {}
+	| MINUS {}
+	| BITWISE_NOT {}
+	| NOT {}
 ;
 
-expressao_posfixa:
-    expressao_primaria {}
-    | expressao_posfixa INC {}
-    | expressao_posfixa DEC {}
-    | expressao_posfixa L_SQUARE_BRACKET expressao R_SQUARE_BRACKET {}
-    | expressao_posfixa L_PAREN R_PAREN {}
-    | expressao_posfixa L_PAREN atribuicao exp_posfixa_aux R_PAREN {}
+exp_posfixa: 
+    exp_prim {}
+	| exp_posfixa INC {}
+	| exp_posfixa DEC {}
+	| exp_posfixa L_SQUARE_BRACKET expressao R_SQUARE_BRACKET {}
+	| exp_posfixa L_PAREN R_PAREN	{}
+	| exp_posfixa L_PAREN atribuicao exp_pf_aux R_PAREN {}
 ;
 
-exp_posfixa_aux:
-    COMMA atribuicao exp_posfixa_aux {}
-    | {}
+exp_pf_aux: 
+    COMMA atribuicao exp_pf_aux	{}
+	| {}
 ;
 
-expressao_primaria:
+exp_prim: 
     IDENTIFIER {}
-    | numero {}
-    | CHARACTER {}
-    | STRING {}
-    | L_PAREN expressao R_PAREN {}
+	| num {}
+	| CHARACTER {}
+	| STRING {}
+	| L_PAREN expressao R_PAREN {}
 ;
 
-numero:
-    NUM_INTEGER {}
+num: 
+    NUM_INTEGER	{}
     | NUM_HEXA {}
     | NUM_OCTAL {}
 ;
 
-pointer:
+pointer: 
     MULTIPLY pointer {}
     | {}
 ;
 
-
 %%
 
-void yyerror(char* s){
+void yyerror(char *s){
 	int i = 1;
 	switch(yychar){
 		case IDENTIFIER_TOO_LONG:
@@ -409,9 +402,8 @@ void yyerror(char* s){
 	}
 }
 
-int main(int argc, char** argv) {
-    input_file = stdin;
-    yyparse();
-
+int main(int argc, char **argv){
+	input_file = stdin;
+	yyparse();
     return 0;
 }
