@@ -110,11 +110,13 @@
 %token END_OF_FILE
 %token OTHER
 
+%start programa
+
 %%
 
 programa:
-    program programa END_OF_FILE { printf("SUCESSFUL COMPILATION."); return 0; }
-    | program END_OF_FILE { printf("SUCESSFUL COMPILATION."); return 0; }
+    program programa END_OF_FILE { printf("SUCCESSFUL COMPILATION."); return 0; }
+    | program END_OF_FILE { printf("SUCCESSFUL COMPILATION."); return 0; }
 ;
 
 program: 
@@ -197,10 +199,10 @@ lista_de_comandos:
     | PRINTF L_PAREN STRING printf_exp R_PAREN SEMICOLON {}
     | SCANF L_PAREN STRING COMMA BITWISE_AND IDENTIFIER R_PAREN SEMICOLON {}
     | EXIT L_PAREN expressao R_PAREN SEMICOLON {}
-    | RETURN exp_opcional SEMICOLON
-    | expressao SEMICOLON
-    | SEMICOLON
-    | bloco
+    | RETURN exp_opcional SEMICOLON {}
+    | expressao SEMICOLON {}
+    | SEMICOLON {}
+    | bloco {}
 ;
 
 printf_exp:
