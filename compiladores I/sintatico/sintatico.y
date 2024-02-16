@@ -110,7 +110,7 @@ void print_line(FILE* input, int n){
 
 programa: 
     program programa END_OF_FILE {printf("SUCCESSFUL COMPILATION."); return 0;}
-	| program END_OF_FILE {printf("SUCCESSFUL COMPILATION."); return 0;}
+	| program END_OF_FILE {prinft("SUCCESSFUL COMPILATION."); return 0;}
 ;
 
 program: 

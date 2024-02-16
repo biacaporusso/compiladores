@@ -1,0 +1,1 @@
+ERRO DE SINTAXE. Linha: 7 Coluna: 37 -> '     tipo vetor_inteiro = vetor[1:10] '

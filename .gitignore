@@ -10,7 +10,7 @@ lista_7/ex4/teste2.txt
 rascunhos/
 *.o
 *.out
-lex.yy.c
+*lex.yy.c
 *.txt
 l7e1
 l7e2
@@ -25,8 +25,16 @@ trabalho_1/trabalho_1
 trabalho_1/minhas_saidas/
 trabalho_1/saidas_padrao/
 trabalho_1/testes/
-sintatico.tab.c 
-sintatico.tab.h
+*sintatico.tab.c 
+*sintatico.tab.h
 sintatico/sintatico
 sintatico/rascunho/
 l9e1
+testar_sintatico.sh
+sintatico/saidas/
+sintatico/saidas_padrao/
+sintatico/testes/
+script.py
+lista_9/minhas_saidas
+lista_9/saidas_padrao
+dcmat

@@ -1,0 +1,1 @@
+ERRO DE SINTAXE. Linha: 3 Coluna: 1 -> 'o'
