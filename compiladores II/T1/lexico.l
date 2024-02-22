@@ -2,8 +2,12 @@
 
 %{
 
-#include <sintatico.tab.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ast.h>
+#include <sintatico.tab.h>
+
 
 void numeroReal() {
     printf("numero real\n");
@@ -73,9 +77,10 @@ void teste() {
 ";" { return PONTO_VIRGULA; }
 "," { return VIRGULA; }
 
-[0-9]+"."[0-9]+ {return NUMERO_REAL;}
-[0-9]+ {return NUMERO_INTEIRO;}
-[a-zA-Z]+[_0-9a-zA-Z]* {return IDENTIFICADOR;}
+[0-9]+"."[0-9]+ { yylval.flutuante = atof(yytext); return NUMERO_REAL;}
+[0-9]+ { yylval.integer = atoi(yytext); return NUMERO_INTEIRO;}
+[a-zA-Z]+[_0-9a-zA-Z]* { strcpy(yylval.identifier,yytext); return IDENTIFICADOR;}
+\n { return EOL; }
 
 
 %%

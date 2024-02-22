@@ -1,10 +1,13 @@
 %{
     #include <stdio.h>
+    #include <stdlib.h>
     #include <string.h>
+    #include <ast.h>
 
-    extern char* yytext;
     extern int yylex();
+    extern char* yytext;
     void yyerror(char *s);
+    TreeNode* AST = NULL;
     
     // VALORES PADRÃO DAS VARIÁVEIS INTERNAS
     float h_view_lo = -6.500000;
@@ -23,8 +26,16 @@
     void informacoes_aluno();
     void mostrar_configuracoes();
     void resetar_configuracoes();
+    void comando_sum(TreeNode *variavel, TreeNode *lim_inferior, TreeNode *lim_superior, TreeNode *no_expr);
 
 %}
+
+%union {
+    TreeNode* ast;
+    int integer;
+    float flutuante;
+    char identifier[1024];
+}
 
 %token ABOUT
 %token ABS
@@ -76,7 +87,18 @@
 %token NUMERO_REAL
 %token NUMERO_INTEIRO
 %token IDENTIFICADOR
+%token EOL 
 
+//%type <ast> calc
+%type <ast> exp
+%type <ast> factor
+%type <ast> term
+%type <integer> NUMERO_INTEIRO
+%type <flutuante> NUMERO_REAL
+%type <identifier> IDENTIFICADOR
+%type <ast> valor_float
+%type <ast> valor_inteiro
+%type <ast> variavel
 
 %start inicio
 
@@ -84,28 +106,40 @@
 
 inicio:
     comando {}
-    | expressao {}
 ;
 
 comando:
-    SHOW  p1 {}
-    | RESET p2 {}
-    | QUIT { return 0; }
-    | SET p3 {}
-    | PLOT p4 {}
-    | INTEGRATE ABRE_PARENTESES valor_float INTERVALO valor_float VIRGULA funcao FECHA_PARENTESES  PONTO_VIRGULA {}
-    | SUM ABRE_PARENTESES variavel VIRGULA valor_float INTERVALO valor_float VIRGULA expressao FECHA_PARENTESES PONTO_VIRGULA {}
-    | MATRIX IGUAL ABRE_COLCHETES ABRE_COLCHETES valor_float{}
-    | SOLVE p5 {}
-    | ABOUT PONTO_VIRGULA { informacoes_aluno(); return 1; }
-    | RPN ABRE_PARENTESES expressao FECHA_PARENTESES PONTO_VIRGULA {}
+    SHOW p1 EOL {}
+    | RESET p2 EOL {}
+    | QUIT EOL { return 0; }
+    | SET p3 EOL {}
+    | PLOT p4 EOL {}
+    | INTEGRATE ABRE_PARENTESES valor_float INTERVALO valor_float VIRGULA funcao FECHA_PARENTESES  PONTO_VIRGULA EOL {}
+    | MATRIX IGUAL ABRE_COLCHETES ABRE_COLCHETES valor_float EOL {}
+    | SOLVE p5 EOL {}
+    | ABOUT PONTO_VIRGULA EOL { informacoes_aluno(); return 1; }
+    | RPN ABRE_PARENTESES exp FECHA_PARENTESES PONTO_VIRGULA EOL {}
+    | SUM ABRE_PARENTESES variavel VIRGULA valor_inteiro INTERVALO valor_inteiro VIRGULA exp FECHA_PARENTESES PONTO_VIRGULA EOL { comando_sum($3, $5, $7, $9); return 1; }
+    | exp EOL { 
+        /*
+        AST = $1;
+        if(AST) {
+            RPN_Walk(AST);
+            Delete_Tree(AST);
+        } else {
+            printf("AST is NULL\n");
+        }
+        //return 0;
+        */
+        printf("%f\n",RPN_Walk($1));
+        Delete_Tree($1);
+        return 1;
+    }
     | atribuicao_valores {}
     | atribuicao_matrizes {}
     | mostrando_valor {}
 ;
 
-variavel: IDENTIFICADOR {}
-;
 
 p1:
     SETTINGS PONTO_VIRGULA { mostrar_configuracoes(); return 1; }
@@ -122,8 +156,8 @@ p3:
     | V_VIEW valor_float INTERVALO valor_float PONTO_VIRGULA {}
     | AXIS ON PONTO_VIRGULA { draw_axis = 1; return 1;}
     | AXIS OFF PONTO_VIRGULA { draw_axis = 0; return 1; }
-    | ERASE PLOT OFF PONTO_VIRGULA {}
-    | ERASE PLOT ON PONTO_VIRGULA {}
+    | ERASE PLOT OFF PONTO_VIRGULA { erase_plot = 0; return 1; }
+    | ERASE PLOT ON PONTO_VIRGULA { erase_plot = 1; return 1; }
     | INTEGRAL_STEPS valor_inteiro PONTO_VIRGULA {}
     | FLOAT PRECISION valor_inteiro PONTO_VIRGULA {}
 ;
@@ -134,7 +168,7 @@ p4:
 ;
 
 funcao:
-    expressao {}
+    exp {}
     | SEN ABRE_PARENTESES funcao FECHA_PARENTESES {}
     | COS ABRE_PARENTESES funcao FECHA_PARENTESES {}
     | TAN ABRE_PARENTESES funcao FECHA_PARENTESES {}
@@ -146,24 +180,108 @@ p5:
     | LINEAR_SYSTEM PONTO_VIRGULA {}
 ;
 
+
+// hash - só os valores que eu atribuo (ex: bia := 4) só quando atribuir um valor
+exp: 
+    factor { $$ = $1; }
+    | exp ADICAO factor { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = ADICAO;
+        aux->left = $1;
+        aux->right = $3;
+        $$ = (TreeNode*) aux; 
+    }
+    | exp SUBTRACAO factor { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = SUBTRACAO;
+        aux->left = $1;
+        aux->right = $3;
+        $$ = (TreeNode*) aux; 
+    }
+;
+
+factor: 
+    term { $$ = $1; }
+    | factor MULTIPLICACAO term { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = MULTIPLICACAO;
+        aux->left = $1;
+        aux->right = $3;
+        $$ = (TreeNode*) aux; 
+    }
+    | factor DIVISAO term { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = DIVISAO;
+        aux->left = $1;
+        aux->right = $3;
+        $$ = (TreeNode*) aux; 
+    }
+;
+
+term: 
+    valor_inteiro { $$ = $1; }
+    | valor_float { $$ = $1; }
+    | variavel { $$ = $1; }
+;
+
+variavel: IDENTIFICADOR { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = IDENTIFICADOR;
+        strcpy(aux->value_string, $1);
+        aux->left = NULL;
+        aux->right = NULL;
+        $$ = (TreeNode*) aux; 
+    }
+;
+
+
 valor_float: 
-    ADICAO NUMERO_REAL {}
-    | SUBTRACAO NUMERO_REAL {}
-    | NUMERO_REAL {}
-    | valor_inteiro {}
+    ADICAO NUMERO_REAL { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = NUMERO_REAL;
+        aux->value_float = $2;
+        aux->left = NULL;
+        aux->right = NULL;
+        $$ = (TreeNode*) aux;
+    }
+    | SUBTRACAO NUMERO_REAL { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = NUMERO_REAL;
+        aux->value_float = $2;
+        aux->left = NULL;
+        aux->right = NULL;
+        $$ = (TreeNode*) aux;
+    }
+    | NUMERO_REAL { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = NUMERO_REAL;
+        aux->value_float = $1;
+        aux->left = NULL;
+        aux->right = NULL;
+        $$ = (TreeNode*) aux; 
+    }
+    | valor_inteiro { $$ = $1; }
 ;
 
 valor_inteiro:
-    ADICAO NUMERO_INTEIRO {}
-    | SUBTRACAO NUMERO_INTEIRO {}
-    | NUMERO_INTEIRO {}
+    ADICAO NUMERO_INTEIRO { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = NUMERO_INTEIRO;
+        aux->value_int = $2;
+        aux->left = NULL;
+        aux->right = NULL;
+        $$ = (TreeNode*) aux;
+    }
+    | SUBTRACAO NUMERO_INTEIRO { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = NUMERO_INTEIRO;
+        aux->value_int = -$2;
+        aux->left = NULL;
+        aux->right = NULL;
+        $$ = (TreeNode*) aux;
+    }
+    | NUMERO_INTEIRO { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
+        aux->node_type = NUMERO_INTEIRO;
+        aux->value_int = $1;
+        aux->left = NULL;
+        aux->right = NULL;
+        $$ = (TreeNode*) aux;
+    }
 ;
 
-expressao: IDENTIFICADOR {}
-;
 
 atribuicao_valores:
-    variavel ATRIBUICAO expressao PONTO_VIRGULA {}
+    variavel ATRIBUICAO exp PONTO_VIRGULA {}
 ;
 
 atribuicao_matrizes: IDENTIFICADOR {}
@@ -172,6 +290,7 @@ atribuicao_matrizes: IDENTIFICADOR {}
 mostrando_valor:
     variavel PONTO_VIRGULA {}
 ;
+
 
 %%
 
@@ -226,9 +345,17 @@ void resetar_configuracoes() {
     connect_dots = 0;
 }
 
-void yyerror(char *s){
-	int i = 1;
-	printf("eba pedro");
+void comando_sum(TreeNode *variavel, TreeNode *lim_inferior, TreeNode *lim_superior, TreeNode *no_expr) {
+
+    float result_somatorio = 0;
+    for (int i=lim_inferior->value_int; i<lim_superior->value_int; i++) {
+        result_somatorio += RPN_Walk(no_expr);
+    }
+
+    printf("%f", result_somatorio);
 }
 
-// todos os comandos possiveis
+void yyerror(char *s) {
+	int i = 1;
+	printf("erro: %s", yytext);
+}

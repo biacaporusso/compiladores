@@ -18,3 +18,4 @@ clean:
 	rm -f *.tab.h
 	rm -f *.o
 	rm -f *.exe
+	rm -f $(PROGRAMA)
