@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ast.h>
-#include <sintatico.tab.h>
+#include "ast.h"
+#include "sintatico.tab.h"
 
 
 void numeroReal() {
@@ -81,6 +81,7 @@ void teste() {
 [0-9]+ { yylval.integer = atoi(yytext); return NUMERO_INTEIRO;}
 [a-zA-Z]+[_0-9a-zA-Z]* { strcpy(yylval.identifier,yytext); return IDENTIFICADOR;}
 \n { return EOL; }
-
+[ \t] {}
+. { return INVALID_SYMBOL; }
 
 %%

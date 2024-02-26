@@ -1,5 +1,6 @@
 #include "ast.h"
 #include <sintatico.tab.h>
+#include <math.h>
 
 float RPN_Walk(TreeNode* aux) {
 
@@ -21,16 +22,16 @@ float RPN_Walk(TreeNode* aux) {
                 resultado = valor_esquerdo - valor_direito;
                 break;
             case MULTIPLICACAO:
-                printf(" ");
+                resultado = valor_esquerdo * valor_direito;
                 break;
             case DIVISAO:
-                printf(" ");
+                resultado = valor_esquerdo / valor_direito;
                 break;
             case POTENCIACAO:
-                printf(" ");
+                resultado = pow(valor_esquerdo, valor_direito);
                 break;
             case RESTO_DIVISAO:
-                printf(" ");
+                resultado = (int)valor_esquerdo % (int)valor_direito;
                 break;
             case NUMERO_INTEIRO:
                 resultado = (float) aux->value_int;
@@ -41,7 +42,7 @@ float RPN_Walk(TreeNode* aux) {
             case IDENTIFICADOR:
                 break;
                 //verifica na hash se identificador tem valor atribuido 
-                    // se sim, valor_esquerda = valor
+                // se sim, valor_esquerda = valor
             default:
                 printf("ERROR: INVALID TYPE ");
                 break;
