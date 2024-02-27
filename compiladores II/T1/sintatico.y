@@ -12,17 +12,20 @@
 
     // estruturas de dados
     TreeNode* AST = NULL;
-    HashTable* HT = NULL;
+    HashTable* hash = NULL;
     Settings* settings = NULL;
+    Matriz* matriz = NULL;
 
     // variaveis globais
     int num_linhas = 1;
     int num_colunas = 1;
     int max_colunas = 0;
+    
+    int funcao_inserida = 0;
 
     // DECLARAÇÃO DAS FUNÇÕES
     void informacoes_aluno();
-    void comando_sum(TreeNode *variavel, TreeNode *lim_inferior, TreeNode *lim_superior, TreeNode *no_expr);
+    void comando_sum(char* variavel, TreeNode *lim_inferior, TreeNode *lim_superior, TreeNode *no_expr, HashTable* hash);
 
 %}
 
@@ -95,9 +98,8 @@
 %type <integer> NUMERO_INTEIRO
 %type <flutuante> NUMERO_REAL
 %type <identifier> IDENTIFICADOR
-%type <ast> valor_float
-%type <ast> valor_inteiro
-%type <ast> variavel
+%type <ast> valor
+%type <ast> func_trigonometrica
 
 %start inicio
 
@@ -108,89 +110,71 @@ inicio:
 ;
 
 comando:
-    SHOW p1 {}
+    SHOW p1 { return 1; }
     | RESET SETTINGS PONTO_VIRGULA EOL { set_default_settings(settings); return 1; }
     | QUIT EOL { return 0; }
-    | SET p3 {}
-    | PLOT p4 PONTO_VIRGULA EOL {}
-    | INTEGRATE ABRE_PARENTESES valor_float INTERVALO valor_float VIRGULA funcao FECHA_PARENTESES  PONTO_VIRGULA EOL {}
+    | SET p3 { return 1; }
+    | PLOT p4 { return 1; }
+    | INTEGRATE ABRE_PARENTESES valor INTERVALO valor VIRGULA func_trigonometrica FECHA_PARENTESES  PONTO_VIRGULA EOL { return 1; }
     | MATRIX IGUAL cria_matriz { max_colunas=0; num_linhas=1; num_colunas=1; return 1;}
     | SOLVE p5 PONTO_VIRGULA EOL {}
     | ABOUT PONTO_VIRGULA EOL { informacoes_aluno(); return 1; }
     | RPN ABRE_PARENTESES exp FECHA_PARENTESES PONTO_VIRGULA EOL {}
-    | SUM ABRE_PARENTESES variavel VIRGULA valor_inteiro INTERVALO valor_inteiro VIRGULA exp FECHA_PARENTESES PONTO_VIRGULA EOL { comando_sum($3, $5, $7, $9); return 1; }
-    //| atribuicao_valores {}
+    | SUM ABRE_PARENTESES IDENTIFICADOR VIRGULA valor INTERVALO valor VIRGULA exp FECHA_PARENTESES PONTO_VIRGULA EOL { comando_sum($3, $5, $7, $9, hash); return 1; }
     | IDENTIFICADOR PONTO_VIRGULA EOL {
         int existe;
-        printf("antes do search");
-        existe = search_hash(HT, $1);
+        //printf("antes do search");
+        existe = search_hash(hash, $1);
         if (existe == -1) {
             printf("undefined SYMBOOOL\n");
         } else {
-            printf("existe na hash");
-            //printf("%s = %f", $1, HT->value);
+            printf("%s = %.6f\n", $1, get_value(hash, $1));
         }
-    }
-    | IDENTIFICADOR ATRIBUICAO valor_inteiro PONTO_VIRGULA EOL {
-        printf("atribuicao\n");
-        inserir_hash(HT, $1, $3->value_int);
-        printf("passou\n");
-    }
-    | exp EOL { 
-        printf("entrou no exp");
-        printf("%f\n", RPN_Walk($1));
-        Delete_Tree($1);
         return 1;
     }
-    | atribuicao_matrizes {}
-    | mostrando_valor {}
-;
+    | IDENTIFICADOR ATRIBUICAO valor PONTO_VIRGULA EOL {
 
-//  { , valor }∗                                ** numero de colunas
-zero_ou_mais_valores_interno:                   
-    VIRGULA valor_inteiro zero_ou_mais_valores_interno { num_colunas++; }
-    | {}
-;
+        // VERIFICAr se é valor real ou matriz -> valores da matriz na hash
+        printf("%.6f\n", (float) $3->value_int);
+        inserir_hash(hash, $1, $3->value_int);
+        return 1;
 
-//   { , [ valor { , valor }∗ ] }∗              ** zero ou mais linhas
-zero_ou_mais_valores_externo:
-    VIRGULA ABRE_COLCHETES valor_inteiro contador_colunas FECHA_COLCHETES zero_ou_mais_valores_externo { num_linhas++; } 
-    | {}
-;
-
-contador_colunas: zero_ou_mais_valores_interno { 
-    if (num_colunas > max_colunas) 
-        max_colunas = num_colunas;
-    num_colunas = 1;
-    
-}
-
-cria_matriz: //  [ [ valor zero_ou_mais_valores_interno ] {,[ valor zero_ou_mais_valores_interno ] }∗ ];
-    ABRE_COLCHETES ABRE_COLCHETES valor_inteiro contador_colunas FECHA_COLCHETES zero_ou_mais_valores_externo FECHA_COLCHETES PONTO_VIRGULA EOL { 
-        printf("matriz com %d linhas e %d colunas", num_linhas, max_colunas);
+    }
+    | exp EOL { 
+        printf("%f\n", RPN_Walk($1, hash));
+        Delete_Tree($1);
+        return 1;
     }
 ;
 
 p1:
     SETTINGS PONTO_VIRGULA EOL { show_settings(settings); return 1; }
-    | MATRIX {}
+    | MATRIX PONTO_VIRGULA EOL { imprimir_matriz(matriz); }
     | SYMBOLS { /*printa_lista */ }
 ;
 
 p3:
-    H_VIEW valor_float INTERVALO valor_float PONTO_VIRGULA EOL { settings->h_view_lo = $2->value_float; settings->h_view_hi = $4->value_float; return 1; }
-    | V_VIEW valor_float INTERVALO valor_float PONTO_VIRGULA EOL { settings->v_view_lo = $2->value_float; settings->v_view_hi = $4->value_float; return 1; }
-    | AXIS ON PONTO_VIRGULA EOL { settings->draw_axis = 1; return 1; }
-    | AXIS OFF PONTO_VIRGULA EOL { settings->draw_axis = 0; return 1; }
-    | ERASE PLOT OFF PONTO_VIRGULA EOL { settings->erase_plot = 0; return 1; }
-    | ERASE PLOT ON PONTO_VIRGULA EOL { settings->erase_plot = 1; return 1; }
-    | INTEGRAL_STEPS valor_inteiro PONTO_VIRGULA EOL { settings->integral_steps = $2->value_int; return 1; }
-    | FLOAT PRECISION valor_inteiro PONTO_VIRGULA EOL { settings->float_precision = $3->value_int; return 1; }
+    H_VIEW valor INTERVALO valor PONTO_VIRGULA EOL { settings->h_view_lo = $2->value_float; settings->h_view_hi = $4->value_float; }
+    | V_VIEW valor INTERVALO valor PONTO_VIRGULA EOL { settings->v_view_lo = $2->value_float; settings->v_view_hi = $4->value_float; }
+    | AXIS ON PONTO_VIRGULA EOL { settings->draw_axis = 1; }
+    | AXIS OFF PONTO_VIRGULA EOL { settings->draw_axis = 0; }
+    | ERASE PLOT OFF PONTO_VIRGULA EOL { settings->erase_plot = 0; }
+    | ERASE PLOT ON PONTO_VIRGULA EOL { settings->erase_plot = 1; }
+    | INTEGRAL_STEPS valor PONTO_VIRGULA EOL { settings->integral_steps = $2->value_int; }
+    | FLOAT PRECISION valor PONTO_VIRGULA EOL { settings->float_precision = $3->value_int; }
 ;
 
 p4:
-    PONTO_VIRGULA {}
-    | ABRE_PARENTESES funcao FECHA_PARENTESES {}
+    PONTO_VIRGULA EOL {
+        if(funcao_inserida == 0) {
+            printf("\nNo Function defined!\n\n");
+            //return 0;
+        } else {
+            //plot(AST, settings, hash);
+            printf("plot");
+        }
+    }
+    | ABRE_PARENTESES funcao FECHA_PARENTESES PONTO_VIRGULA EOL {}
 ;
 
 funcao:
@@ -210,201 +194,131 @@ p5:
 // hash - só os valores que eu atribuo (ex: bia := 4) só quando atribuir um valor
 exp: 
     factor { $$ = $1; }
-    | exp ADICAO factor { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = ADICAO;
-        aux->left = $1;
-        aux->right = $3;
-        $$ = (TreeNode*) aux; 
+    | exp ADICAO factor { 
+        //  create_ast_node(node_type, value_int, value_float, value_string, left, right);
+        TreeNode* aux = create_ast_node(ADICAO, -2, -2, NULL, $1, $3);
+        $$ = aux;
     }
-    | exp SUBTRACAO factor { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = SUBTRACAO;
-        aux->left = $1;
-        aux->right = $3;
-        $$ = (TreeNode*) aux; 
+    | exp SUBTRACAO factor { 
+        TreeNode* aux = create_ast_node(SUBTRACAO, -2, -2, NULL, $1, $3);
+        $$ = aux;
     }
 ;
 
 factor: 
     term { $$ = $1; }
-    | factor MULTIPLICACAO term { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = MULTIPLICACAO;
-        aux->left = $1;
-        aux->right = $3;
-        $$ = (TreeNode*) aux; 
+    | factor MULTIPLICACAO term { 
+        //  create_ast_node(node_type, value_int, value_float, value_string, left, right);
+        TreeNode* aux = create_ast_node(MULTIPLICACAO, -2, -2, NULL, $1, $3);
+        $$ = aux;
     }
-    | factor DIVISAO term { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = DIVISAO;
-        aux->left = $1;
-        aux->right = $3;
-        $$ = (TreeNode*) aux; 
+    | factor DIVISAO term { 
+        TreeNode* aux = create_ast_node(DIVISAO, -2, -2, NULL, $1, $3);
+        $$ = aux;
     }
-    | factor POTENCIACAO term { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = POTENCIACAO;
-        aux->left = $1;
-        aux->right = $3;
-        $$ = (TreeNode*) aux; 
+    | factor POTENCIACAO term { 
+        TreeNode* aux = create_ast_node(POTENCIACAO, -2, -2, NULL, $1, $3);
+        $$ = aux;
     }
-    | factor RESTO_DIVISAO term { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = RESTO_DIVISAO;
-        aux->left = $1;
-        aux->right = $3;
-        $$ = (TreeNode*) aux; 
+    | factor RESTO_DIVISAO term { 
+        TreeNode* aux = create_ast_node(RESTO_DIVISAO, -2, -2, NULL, $1, $3);
+        $$ = aux;
     }
+    | func_trigonometrica { $$ = $1; }
+;
+
+func_trigonometrica:
+
+     SEN ABRE_PARENTESES exp FECHA_PARENTESES {
+        TreeNode* aux = create_ast_node(SEN, -2, -2, NULL, $3, NULL);
+        $$ = aux;
+    }
+    |  COS ABRE_PARENTESES exp FECHA_PARENTESES {
+        TreeNode* aux = create_ast_node(COS, -2, -2, NULL, $3, NULL);
+        $$ = aux;
+    }
+    |  TAN ABRE_PARENTESES exp FECHA_PARENTESES {
+        TreeNode* aux = create_ast_node(TAN, -2, -2, NULL, $3, NULL);
+        $$ = aux;
+    }
+    |  ABS ABRE_PARENTESES exp FECHA_PARENTESES {
+        TreeNode* aux = create_ast_node(ABS, -2, -2, NULL, $3, NULL);
+        $$ = aux;
+    } 
+    
 ;
 
 term: 
-    valor_inteiro { $$ = $1; }
-    | valor_float { $$ = $1; }
-    | variavel { 
-        // procurar se a variavel existe na hash
-        // se existir, atribui o valor 
-        // senão, undefined symbol
-
-        //char string[1024];
-        //TreeNode* no_variavel = $1->value_string;
-        //strcpy(string, $1->value_string);
-        if(search_hash(HT, $1->value_string) == -1) {
-            printf("Undefined symbol [%s]", $1->value_string);
-        } else {
-            printf("nao sei"); // fix
-        }
-
-        $$ = $1; 
+    valor { $$ = $1; }
+    | IDENTIFICADOR { 
+        //  create_ast_node(node_type, value_int, value_float, value_string, left, right);
+        TreeNode* aux = create_ast_node(IDENTIFICADOR, -2, -2, $1, NULL, NULL);
+        $$ = aux;
     }
-;
 
-variavel: 
-    IDENTIFICADOR { printf("aqui"); TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = IDENTIFICADOR;
-        strcpy(aux->value_string, $1);
-        aux->left = NULL;
-        aux->right = NULL;
-        $$ = (TreeNode*) aux; 
-    }
-    | IDENTIFICADOR ATRIBUICAO valor_float { printf("aqui2"); TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = IDENTIFICADOR;
-        strcpy(aux->value_string, $1);
-        aux->left = NULL;
-        aux->right = NULL;
-        $$ = (TreeNode*) aux; 
-
-        // inserir na hash (somente quando tem valor atribuido)
-        inserir_hash(HT, aux->value_string, 0);  // fix valor 0
-    }
-    | IDENTIFICADOR ATRIBUICAO valor_inteiro { printf("aqui3"); TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = IDENTIFICADOR;
-        strcpy(aux->value_string, $1);
-        aux->left = NULL;
-        aux->right = NULL;
-        $$ = (TreeNode*) aux; 
-
-        // inserir na hash (somente quando tem valor atribuido)
-        inserir_hash(HT, aux->value_string, 0);  // fix valor 0
-    }
-    /*
-    | SEN ABRE_PARENTESES exp FECHA_PARENTESES {
-
-    }
-    | COS ABRE_PARENTESES exp FECHA_PARENTESES {
-
-    }
-    | TAN ABRE_PARENTESES exp FECHA_PARENTESES {
-
-    }
-    | ABS ABRE_PARENTESES exp FECHA_PARENTESES {
-
-    } */
+    | ABRE_PARENTESES exp FECHA_PARENTESES {
+        $$ = $2;
+    } 
 
 ;
 
-valor_float: 
-    ADICAO NUMERO_REAL { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = NUMERO_REAL;
-        aux->value_float = $2;
-        aux->left = NULL;
-        aux->right = NULL;
-        $$ = (TreeNode*) aux;
+valor:
+    ADICAO NUMERO_REAL { 
+        //  create_ast_node(node_type, value_int, value_float, value_string, left, right);
+        TreeNode* aux = create_ast_node(NUMERO_REAL, -2, $2, NULL, NULL, NULL);
+        $$ = aux;
     }
-    | SUBTRACAO NUMERO_REAL { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = NUMERO_REAL;
-        aux->value_float = -$2;
-        aux->left = NULL;
-        aux->right = NULL;
-        $$ = (TreeNode*) aux;
+    | SUBTRACAO NUMERO_REAL { 
+        TreeNode* aux = create_ast_node(NUMERO_REAL, -2, -$2, NULL, NULL, NULL);
+        $$ = aux;
     }
-    | NUMERO_REAL { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = NUMERO_REAL;
-        aux->value_float = $1;
-        aux->left = NULL;
-        aux->right = NULL;
-        $$ = (TreeNode*) aux; 
+    | NUMERO_REAL {
+        TreeNode* aux = create_ast_node(NUMERO_REAL, -2, $1, NULL, NULL, NULL);
+        $$ = aux; 
     }
-    | valor_inteiro { $$ = $1; }
-;
-
-valor_inteiro:
-    ADICAO NUMERO_INTEIRO { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = NUMERO_INTEIRO;
-        aux->value_int = $2;
-        aux->left = NULL;
-        aux->right = NULL;
-        $$ = (TreeNode*) aux;
+    | ADICAO NUMERO_INTEIRO {
+        TreeNode* aux = create_ast_node(NUMERO_INTEIRO, $2, (float)$2, NULL, NULL, NULL);
+        $$ = aux;
     }
-    | SUBTRACAO NUMERO_INTEIRO { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = NUMERO_INTEIRO;
-        aux->value_int = -$2;
-        aux->left = NULL;
-        aux->right = NULL;
-        $$ = (TreeNode*) aux;
+    | SUBTRACAO NUMERO_INTEIRO {
+        TreeNode* aux = create_ast_node(NUMERO_INTEIRO, -$2, (float)-$2, NULL, NULL, NULL);
+        $$ = aux;
     }
-    | NUMERO_INTEIRO { TreeNode* aux = (TreeNode*)malloc(sizeof(struct node));
-        aux->node_type = NUMERO_INTEIRO;
-        aux->value_int = $1;
-        aux->left = NULL;
-        aux->right = NULL;
-        $$ = (TreeNode*) aux;
+    | NUMERO_INTEIRO { 
+        TreeNode* aux = create_ast_node(NUMERO_INTEIRO, $1, (float)$1, NULL, NULL, NULL);
+        $$ = aux; 
     }
 ;
 
+//  { , valor }∗                                ** numero de colunas
+zero_ou_mais_colunas:                   
+    VIRGULA valor zero_ou_mais_colunas { inserir_matriz(matriz, num_linhas, num_colunas, $2->value_float); num_colunas++; }
+    | {}
+;
 
-/* atribuicao_valores:
-    IDENTIFICADOR ATRIBUICAO exp PONTO_VIRGULA {
+//   { , [ valor { , valor }∗ ] }∗              ** zero ou mais linhas
+zero_ou_mais_linhas:
+    VIRGULA ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas { num_linhas++; } 
+    | {}
+;
 
-        char ident[1024];
-        printf("oi");
-        strcpy(ident, $1);
-        float valor = RPN_Walk($3);
-        printf("tchau");
-        // inserir hash
-        inserir_hash(HT, ident, valor);
-
+contador_colunas: 
+    zero_ou_mais_colunas { 
+        if (num_colunas > max_colunas) 
+            max_colunas = num_colunas;
+        num_colunas = 1;
     }
-; */
-
-atribuicao_matrizes: IDENTIFICADOR {}
 ;
 
-mostrando_valor:
-    variavel PONTO_VIRGULA {}
+cria_matriz: //  [ [ valor zero_ou_mais_valores_interno ] {,[ valor zero_ou_mais_valores_interno ] }∗ ];
+    ABRE_COLCHETES ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas FECHA_COLCHETES PONTO_VIRGULA EOL { 
+        printf("matriz com %d linhas e %d colunas\n", num_linhas, max_colunas);
+    }
 ;
-
 
 %%
 
 
-int main(int argc, char** argv) {
-
-    settings = create_settings();
-    HT = create_hash_table();
-
-    int verificador_comandos = 1;
-
-    while (verificador_comandos == 1) {
-        printf("\n>");
-        verificador_comandos = yyparse();
-    }
-    return 0;
-}
 
 void informacoes_aluno() {
     printf("+--------------------------------------------------------+\n");
@@ -416,27 +330,44 @@ void informacoes_aluno() {
 
 }
 
-void comando_sum(TreeNode *variavel, TreeNode *lim_inferior, TreeNode *lim_superior, TreeNode *no_expr) {
+void comando_sum(char* variavel, TreeNode *lim_inferior, TreeNode *lim_superior, TreeNode *no_expr, HashTable* hash) {
 
     float result_somatorio = 0;
-    for (int i=lim_inferior->value_int; i<lim_superior->value_int; i++) {
-        result_somatorio += RPN_Walk(no_expr);
+
+    for (int i=lim_inferior->value_int; i<=lim_superior->value_int; i++) {
+         inserir_hash(hash, variavel, i);
+        result_somatorio += RPN_Walk(no_expr, hash);
     }
 
     printf("%f", result_somatorio);
+}
+
+int main(int argc, char** argv) {
+
+    settings = create_settings();
+    hash = create_hash_table();
+    matriz = create_matrix(10, 10);
+
+    int verificador_comandos = 1;
+
+    while (verificador_comandos == 1) {
+        printf("\n>");
+        verificador_comandos = yyparse();
+    }
+    return 0;
 }
 
 void yyerror(char *s) {
 	
     switch(yychar) {
         case INVALID_SYMBOL:
-            printf("\nInvalid Symbol: %s", yytext);
+            printf("Invalid Symbol: %s\n", yytext);
             break;
         case SYNTAX_ERROR:
-            printf("\nSYNTAX ERROR: [%s]", yytext);
+            printf("SYNTAX ERROR: [%s]\n", yytext);
             break;
         default:
-            printf("\nSYNTAX ERROR: Incomplete Command.");
+            printf("SYNTAX ERROR: Incomplete Command\n");
             break;
     }
 }

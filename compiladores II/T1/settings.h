@@ -1,3 +1,6 @@
+#ifndef SETTINGS_C_SETTINGS_H
+#define SETTINGS_C_SETTINGS_H 1
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -18,3 +21,6 @@ Settings* create_settings();
 Settings* set_default_settings(Settings* settings);
 
 void show_settings(Settings* settings);
+
+#endif
+
