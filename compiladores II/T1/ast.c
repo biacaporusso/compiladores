@@ -43,29 +43,32 @@ float RPN_Walk(TreeNode* aux, HashTable* hash) {
                 resultado = aux->value_float;
                 break;
             case SEN:
-                resultado = (float)sin(aux->value_float);        // fix
+                resultado = (float)sin(valor_esquerdo);        // fix
                 break;
             case COS:
-                resultado = cos(aux->value_float);
+                resultado = cos(valor_esquerdo);
                 break;
             case TAN:
-                resultado = tan(aux->value_float);
+                resultado = tan(valor_esquerdo);
                 break;
             case ABS:
-                if (aux->value_float < 0)
-                    resultado = -aux->value_float;
+                if (valor_esquerdo < 0)
+                    resultado = -valor_esquerdo;
                 else
-                    resultado = aux->value_float;
+                    resultado = valor_esquerdo;
                 break;
             case IDENTIFICADOR:
                 //verifica na hash se identificador tem valor atribuido 
                 // se sim, valor_esquerda = valor
-                if(search_hash(hash, aux->value_string) == -1) {
+                /*if(search_hash(hash, aux->value_string) == -1) {
                     printf("Undefined symbol [%s]", aux->value_string);
                 } else {
                     //aux->left = get_value(hash, aux->value_string);
                     resultado = get_value(hash, aux->value_string);
-                }
+                }*/
+                if(search_hash(hash, aux->value_string) != -1) {
+                    resultado = get_value(hash, aux->value_string);
+                } 
                 break;
             default:
                 printf("ERROR: INVALID TYPE ");

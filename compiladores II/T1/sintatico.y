@@ -159,7 +159,11 @@ comando:
         return 1;
     }
     | exp EOL { 
-        printf("%f\n", RPN_Walk($1, hash));
+        if (search_hash(hash, $1->value_string) == -1) 
+            printf("Undefined symbol [%s]\n", $1->value_string);
+        else
+            printf("%f\n", RPN_Walk($1, hash));
+
         Delete_Tree($1);
         return 1;
     }
@@ -192,15 +196,7 @@ p4:
             printf("plot");
         }
     }
-    | ABRE_PARENTESES funcao FECHA_PARENTESES PONTO_VIRGULA EOL {}
-;
-
-funcao:
-    exp {}
-    | SEN ABRE_PARENTESES funcao FECHA_PARENTESES {}
-    | COS ABRE_PARENTESES funcao FECHA_PARENTESES {}
-    | TAN ABRE_PARENTESES funcao FECHA_PARENTESES {}
-    | ABS ABRE_PARENTESES funcao FECHA_PARENTESES {}
+    | ABRE_PARENTESES func_trigonometrica FECHA_PARENTESES PONTO_VIRGULA EOL {}
 ;
 
 p5:
@@ -248,7 +244,7 @@ factor:
 func_trigonometrica:
 
      SEN ABRE_PARENTESES exp FECHA_PARENTESES {
-        TreeNode* aux = create_ast_node(SEN, $3->value_int, $3->value_float, NULL, $3, NULL);
+        TreeNode* aux = create_ast_node(SEN, -2,-2, NULL, $3, NULL);
         $$ = aux;
     }
     |  COS ABRE_PARENTESES exp FECHA_PARENTESES {
