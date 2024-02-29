@@ -15,6 +15,7 @@
     HashTable* hash = NULL;
     Settings* settings = NULL;
     Matriz* matriz = NULL;
+    ListaLinhas* lista_matriz = NULL;
 
     // variaveis globais
     int num_linhas = 1;
@@ -118,18 +119,30 @@ comando:
     | QUIT EOL { return 0; }
     | SET p3 { return 1; }
     | PLOT p4 { return 1; }
-    | INTEGRATE ABRE_PARENTESES valor INTERVALO valor VIRGULA func_trigonometrica FECHA_PARENTESES  PONTO_VIRGULA EOL { /*comando_integrate($3->value_float, $5->value_float, $7);*/ return 1; }
+    | INTEGRATE ABRE_PARENTESES valor INTERVALO valor VIRGULA func_trigonometrica FECHA_PARENTESES  PONTO_VIRGULA EOL { 
+        if($3->value_float > $5->value_float) {
+            printf("ERROR: lower limit must be smaller than upper limit\n");
+            return 1;
+        }
+        /*comando_integrate($3->value_float, $5->value_float, $7);*/ 
+        return 1; 
+        }
     | MATRIX IGUAL cria_matriz { 
         printf("\nstring matriz no final: %s\n", string_matriz);
         printf("num linhas: %d\nnum colunas: %d\n\n", num_linhas, max_colunas);
         //liberar_matriz(matriz);
+
+        if(num_linhas > 10 || max_colunas > 10) {
+            printf("ERROR: Matrix limits out of boundaries.\n");
+            return 1;
+        }
         matriz = create_matrix(num_linhas, max_colunas);
         imprimir_matriz(matriz);
         formatar_matriz(matriz, string_matriz, num_linhas, max_colunas);
         //max_colunas=0; num_linhas=1; num_colunas=1; 
         return 1;
     }
-    | SOLVE p5 PONTO_VIRGULA EOL {}
+    | SOLVE p5 {}
     | ABOUT PONTO_VIRGULA EOL { informacoes_aluno(); return 1; }
     | RPN ABRE_PARENTESES exp FECHA_PARENTESES PONTO_VIRGULA EOL {}
     | SUM ABRE_PARENTESES IDENTIFICADOR VIRGULA valor INTERVALO valor VIRGULA exp FECHA_PARENTESES PONTO_VIRGULA EOL { comando_sum($3, $5, $7, $9, hash); return 1; }
@@ -140,7 +153,7 @@ comando:
         if (existe == -1) {
             printf("Undefined symbol\n");
         } else {
-            printf("%s = %.6f\n", $1, get_value(hash, $1));
+            printf("%s = %.f\n", $1, get_value(hash, $1));
         }
         return 1;
     }
@@ -159,10 +172,12 @@ comando:
         return 1;
     }
     | exp EOL { 
-        if (search_hash(hash, $1->value_string) == -1) 
+        if (search_hash(hash, $1->value_string) == -1) {
             printf("Undefined symbol [%s]\n", $1->value_string);
-        else
-            printf("%f\n", RPN_Walk($1, hash));
+        } else {
+            float result = RPN_Walk($1, hash); 
+            printf("%.*f\n", settings->float_precision, RPN_Walk($1, hash));
+        }
 
         Delete_Tree($1);
         return 1;
@@ -176,13 +191,34 @@ p1:
 ;
 
 p3:
-    H_VIEW valor INTERVALO valor PONTO_VIRGULA EOL { settings->h_view_lo = $2->value_float; settings->h_view_hi = $4->value_float; }
-    | V_VIEW valor INTERVALO valor PONTO_VIRGULA EOL { settings->v_view_lo = $2->value_float; settings->v_view_hi = $4->value_float; }
+    H_VIEW valor INTERVALO valor PONTO_VIRGULA EOL { 
+        if ($2->value_float < $4->value_float) {
+            settings->h_view_lo = $2->value_float; settings->h_view_hi = $4->value_float; 
+        } else {
+            printf("ERROR: h_view_lo must be smaller than h_view_hi\n");
+            return 1;
+        }
+    }
+    | V_VIEW valor INTERVALO valor PONTO_VIRGULA EOL { 
+        if ($2->value_float < $4->value_float) {
+            settings->v_view_lo = $2->value_float; settings->v_view_hi = $4->value_float; 
+        } else {
+            printf("ERROR: v_view_lo must be smaller than v_view_hi\n");
+            return 1;
+        }
+    }
     | AXIS ON PONTO_VIRGULA EOL { settings->draw_axis = 1; }
     | AXIS OFF PONTO_VIRGULA EOL { settings->draw_axis = 0; }
     | ERASE PLOT OFF PONTO_VIRGULA EOL { settings->erase_plot = 0; }
     | ERASE PLOT ON PONTO_VIRGULA EOL { settings->erase_plot = 1; }
-    | INTEGRAL_STEPS valor PONTO_VIRGULA EOL { settings->integral_steps = $2->value_int; }
+    | INTEGRAL_STEPS valor PONTO_VIRGULA EOL { 
+        if ($2->value_float > 0)
+            settings->integral_steps = $2->value_int; 
+        else {
+            printf("ERROR: integral_steps must be a positive non-zero integer\n");
+            return 1;
+        }
+    }
     | FLOAT PRECISION valor PONTO_VIRGULA EOL { settings->float_precision = $3->value_int; }
 ;
 
@@ -200,8 +236,18 @@ p4:
 ;
 
 p5:
-    DETERMINANT {}
-    | LINEAR_SYSTEM {}
+    DETERMINANT PONTO_VIRGULA EOL {
+        if (matriz->linhas != matriz->colunas) {
+            printf("Matrix format incorrect!\n");
+            return 1;
+        }
+    }
+    | LINEAR_SYSTEM PONTO_VIRGULA EOL {
+        if (matriz->linhas != matriz->colunas + 1) {
+            printf("Matrix format incorrect!\n");
+            return 1;
+        }
+    }
 ;
 
 
@@ -418,6 +464,7 @@ int main(int argc, char** argv) {
     hash = create_hash_table();
     //matriz = create_matrix(10, 10);
     string_matriz = malloc(sizeof(char*));
+    lista_matriz = newNode_listaExterna();
 
     int verificador_comandos = 1;
 

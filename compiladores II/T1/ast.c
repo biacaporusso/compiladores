@@ -14,65 +14,71 @@ float RPN_Walk(TreeNode* aux, HashTable* hash) {
         float valor_esquerdo = RPN_Walk(aux->left, hash);
         float valor_direito = RPN_Walk(aux->right, hash);
 
-        switch(aux->node_type) {
-            case ADICAO: 
-                /*if (aux->right == NULL)
-                    //unario
-                else */
-                resultado = valor_esquerdo + valor_direito;
-                break;
-            case SUBTRACAO:
-                resultado = valor_esquerdo - valor_direito;
-                break;
-            case MULTIPLICACAO:
-                resultado = valor_esquerdo * valor_direito;
-                break;
-            case DIVISAO:
-                resultado = valor_esquerdo / valor_direito;
-                break;
-            case POTENCIACAO:
-                resultado = pow(valor_esquerdo, valor_direito);
-                break;
-            case RESTO_DIVISAO:
-                resultado = (int)valor_esquerdo % (int)valor_direito;
-                break;
-            case NUMERO_INTEIRO:
-                resultado = (float) aux->value_int;
-                break;
-            case NUMERO_REAL:
-                resultado = aux->value_float;
-                break;
-            case SEN:
-                resultado = (float)sin(valor_esquerdo);        // fix
-                break;
-            case COS:
-                resultado = cos(valor_esquerdo);
-                break;
-            case TAN:
-                resultado = tan(valor_esquerdo);
-                break;
-            case ABS:
-                if (valor_esquerdo < 0)
-                    resultado = -valor_esquerdo;
-                else
-                    resultado = valor_esquerdo;
-                break;
-            case IDENTIFICADOR:
-                //verifica na hash se identificador tem valor atribuido 
-                // se sim, valor_esquerda = valor
-                /*if(search_hash(hash, aux->value_string) == -1) {
-                    printf("Undefined symbol [%s]", aux->value_string);
-                } else {
-                    //aux->left = get_value(hash, aux->value_string);
-                    resultado = get_value(hash, aux->value_string);
-                }*/
-                if(search_hash(hash, aux->value_string) != -1) {
-                    resultado = get_value(hash, aux->value_string);
-                } 
-                break;
-            default:
-                printf("ERROR: INVALID TYPE ");
-                break;
+        if((aux->left->node_type == NUMERO_REAL && aux->right->node_type == NUMERO_REAL) || 
+        (aux->left->node_type == NUMERO_INTEIRO && aux->right->node_type == NUMERO_INTEIRO)) {
+            switch(aux->node_type) {
+                case ADICAO: 
+                    /*if (aux->right == NULL)
+                        //unario
+                    else */
+                    resultado = valor_esquerdo + valor_direito;
+                    break;
+                case SUBTRACAO:
+                    resultado = valor_esquerdo - valor_direito;
+                    break;
+                case MULTIPLICACAO:
+                    resultado = valor_esquerdo * valor_direito;
+                    break;
+                case DIVISAO:
+                    resultado = valor_esquerdo / valor_direito;
+                    break;
+                case POTENCIACAO:
+                    resultado = pow(valor_esquerdo, valor_direito);
+                    break;
+                case RESTO_DIVISAO:
+                    resultado = (int)valor_esquerdo % (int)valor_direito;
+                    break;
+                case NUMERO_INTEIRO:
+                    resultado = (float) aux->value_int;
+                    break;
+                case NUMERO_REAL:
+                    resultado = aux->value_float;
+                    break;
+                case SEN:
+                    resultado = (float)sin(valor_esquerdo);        // fix
+                    break;
+                case COS:
+                    resultado = cos(valor_esquerdo);
+                    break;
+                case TAN:
+                    resultado = tan(valor_esquerdo);
+                    break;
+                case ABS:
+                    if (valor_esquerdo < 0)
+                        resultado = -valor_esquerdo;
+                    else
+                        resultado = valor_esquerdo;
+                    break;
+                case IDENTIFICADOR:
+                    //verifica na hash se identificador tem valor atribuido 
+                    // se sim, valor_esquerda = valor
+                    /*if(search_hash(hash, aux->value_string) == -1) {
+                        printf("Undefined symbol [%s]", aux->value_string);
+                    } else {
+                        //aux->left = get_value(hash, aux->value_string);
+                        resultado = get_value(hash, aux->value_string);
+                    }*/
+                    if(search_hash(hash, aux->value_string) != -1) {
+                        resultado = get_value(hash, aux->value_string);
+                    } 
+                    break;
+                default:
+                    printf("ERROR: INVALID TYPE ");
+                    break;
+
+            } 
+        } else {
+            printf("Incorrect type for operator '%d' - have %d and %d\n", aux->node_type, aux->left->node_type, aux->right->node_type);
         }
     }
     return resultado;
