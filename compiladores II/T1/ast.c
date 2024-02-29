@@ -43,7 +43,7 @@ float RPN_Walk(TreeNode* aux, HashTable* hash) {
                 resultado = aux->value_float;
                 break;
             case SEN:
-                resultado = sin(aux->value_int);        // fix
+                resultado = (float)sin(aux->value_float);        // fix
                 break;
             case COS:
                 resultado = cos(aux->value_float);
@@ -52,7 +52,10 @@ float RPN_Walk(TreeNode* aux, HashTable* hash) {
                 resultado = tan(aux->value_float);
                 break;
             case ABS:
-                resultado = abs(aux->value_float);
+                if (aux->value_float < 0)
+                    resultado = -aux->value_float;
+                else
+                    resultado = aux->value_float;
                 break;
             case IDENTIFICADOR:
                 //verifica na hash se identificador tem valor atribuido 

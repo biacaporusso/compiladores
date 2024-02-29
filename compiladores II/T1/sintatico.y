@@ -18,14 +18,17 @@
 
     // variaveis globais
     int num_linhas = 1;
-    int num_colunas = 1;
+    int num_colunas = 0;
     int max_colunas = 0;
+    char* string_matriz;
     
     int funcao_inserida = 0;
 
     // DECLARAÇÃO DAS FUNÇÕES
     void informacoes_aluno();
     void comando_sum(char* variavel, TreeNode *lim_inferior, TreeNode *lim_superior, TreeNode *no_expr, HashTable* hash);
+    char* concat_strings(const char* str1, const char* str2);
+    char* to_string(float value);
 
 %}
 
@@ -115,8 +118,17 @@ comando:
     | QUIT EOL { return 0; }
     | SET p3 { return 1; }
     | PLOT p4 { return 1; }
-    | INTEGRATE ABRE_PARENTESES valor INTERVALO valor VIRGULA func_trigonometrica FECHA_PARENTESES  PONTO_VIRGULA EOL { return 1; }
-    | MATRIX IGUAL cria_matriz { max_colunas=0; num_linhas=1; num_colunas=1; return 1;}
+    | INTEGRATE ABRE_PARENTESES valor INTERVALO valor VIRGULA func_trigonometrica FECHA_PARENTESES  PONTO_VIRGULA EOL { /*comando_integrate($3->value_float, $5->value_float, $7);*/ return 1; }
+    | MATRIX IGUAL cria_matriz { 
+        printf("\nstring matriz no final: %s\n", string_matriz);
+        printf("num linhas: %d\nnum colunas: %d\n\n", num_linhas, max_colunas);
+        //liberar_matriz(matriz);
+        matriz = create_matrix(num_linhas, max_colunas);
+        imprimir_matriz(matriz);
+        formatar_matriz(matriz, string_matriz, num_linhas, max_colunas);
+        //max_colunas=0; num_linhas=1; num_colunas=1; 
+        return 1;
+    }
     | SOLVE p5 PONTO_VIRGULA EOL {}
     | ABOUT PONTO_VIRGULA EOL { informacoes_aluno(); return 1; }
     | RPN ABRE_PARENTESES exp FECHA_PARENTESES PONTO_VIRGULA EOL {}
@@ -126,7 +138,7 @@ comando:
         //printf("antes do search");
         existe = search_hash(hash, $1);
         if (existe == -1) {
-            printf("undefined SYMBOOOL\n");
+            printf("Undefined symbol\n");
         } else {
             printf("%s = %.6f\n", $1, get_value(hash, $1));
         }
@@ -135,10 +147,16 @@ comando:
     | IDENTIFICADOR ATRIBUICAO valor PONTO_VIRGULA EOL {
 
         // VERIFICAr se é valor real ou matriz -> valores da matriz na hash
-        printf("%.6f\n", (float) $3->value_int);
-        inserir_hash(hash, $1, $3->value_int);
+        printf("%.6f\n", (float) $3->value_float);
+        inserir_hash(hash, $1, $3->value_float);
         return 1;
 
+    }
+    | IDENTIFICADOR ATRIBUICAO exp PONTO_VIRGULA EOL {
+        printf("%f\n", RPN_Walk($3, hash));
+        inserir_hash(hash, $1, RPN_Walk($3, hash));
+        Delete_Tree($3);
+        return 1;
     }
     | exp EOL { 
         printf("%f\n", RPN_Walk($1, hash));
@@ -150,7 +168,7 @@ comando:
 p1:
     SETTINGS PONTO_VIRGULA EOL { show_settings(settings); return 1; }
     | MATRIX PONTO_VIRGULA EOL { imprimir_matriz(matriz); }
-    | SYMBOLS { /*printa_lista */ }
+    | SYMBOLS PONTO_VIRGULA EOL { printar_hash(hash); }
 ;
 
 p3:
@@ -230,7 +248,7 @@ factor:
 func_trigonometrica:
 
      SEN ABRE_PARENTESES exp FECHA_PARENTESES {
-        TreeNode* aux = create_ast_node(SEN, -2, -2, NULL, $3, NULL);
+        TreeNode* aux = create_ast_node(SEN, $3->value_int, $3->value_float, NULL, $3, NULL);
         $$ = aux;
     }
     |  COS ABRE_PARENTESES exp FECHA_PARENTESES {
@@ -242,7 +260,7 @@ func_trigonometrica:
         $$ = aux;
     }
     |  ABS ABRE_PARENTESES exp FECHA_PARENTESES {
-        TreeNode* aux = create_ast_node(ABS, -2, -2, NULL, $3, NULL);
+        TreeNode* aux = create_ast_node(ABS, $3->value_int, $3->value_float, NULL, $3, NULL);
         $$ = aux;
     } 
     
@@ -265,15 +283,15 @@ term:
 valor:
     ADICAO NUMERO_REAL { 
         //  create_ast_node(node_type, value_int, value_float, value_string, left, right);
-        TreeNode* aux = create_ast_node(NUMERO_REAL, -2, $2, NULL, NULL, NULL);
+        TreeNode* aux = create_ast_node(NUMERO_REAL, (int)$2, $2, NULL, NULL, NULL);
         $$ = aux;
     }
     | SUBTRACAO NUMERO_REAL { 
-        TreeNode* aux = create_ast_node(NUMERO_REAL, -2, -$2, NULL, NULL, NULL);
+        TreeNode* aux = create_ast_node(NUMERO_REAL, (int)-$2, -$2, NULL, NULL, NULL);
         $$ = aux;
     }
     | NUMERO_REAL {
-        TreeNode* aux = create_ast_node(NUMERO_REAL, -2, $1, NULL, NULL, NULL);
+        TreeNode* aux = create_ast_node(NUMERO_REAL, (int)$1, $1, NULL, NULL, NULL);
         $$ = aux; 
     }
     | ADICAO NUMERO_INTEIRO {
@@ -291,34 +309,90 @@ valor:
 ;
 
 //  { , valor }∗                                ** numero de colunas
-zero_ou_mais_colunas:                   
-    VIRGULA valor zero_ou_mais_colunas { inserir_matriz(matriz, num_linhas, num_colunas, $2->value_float); num_colunas++; }
-    | {}
-;
-
-//   { , [ valor { , valor }∗ ] }∗              ** zero ou mais linhas
-zero_ou_mais_linhas:
-    VIRGULA ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas { num_linhas++; } 
-    | {}
-;
-
-contador_colunas: 
-    zero_ou_mais_colunas { 
-        if (num_colunas > max_colunas) 
+zero_ou_mais_colunas:
+    valores_matriz {
+        //verificar se qtde de colunas atuais é maior q qtde de colunas 
+        if (num_colunas > max_colunas)
             max_colunas = num_colunas;
-        num_colunas = 1;
+        num_colunas = 0;
+        // resetar qtde de colunas atuais pra 0
+    }
+;
+
+valores_matriz:
+    VIRGULA valor {
+        char valor_em_string[20];
+        strcpy(valor_em_string, to_string($2->value_float));
+        //printf("valor em string1: %s\n", valor_em_string);
+        string_matriz = concat_strings(string_matriz, valor_em_string);
+        num_colunas++;
+    }
+    | valores_matriz VIRGULA valor {
+        char valor_em_string2[20];
+        strcpy(valor_em_string2, to_string($3->value_float));
+        string_matriz = concat_strings(string_matriz, valor_em_string2);
+        num_colunas++;
+    }
+    | valor {
+        char valor_em_string3[20];
+        strcpy(valor_em_string3, to_string($1->value_float));
+        string_matriz = concat_strings(string_matriz, valor_em_string3);
+        num_colunas++;
+    }
+
+
+//   { ∗ ] }∗  , [ valor { , valor }            ** zero ou mais linhas
+zero_ou_mais_linhas:  { strcat(string_matriz, " "); strcat(string_matriz, "|"); }
+    VIRGULA ABRE_COLCHETES zero_ou_mais_colunas FECHA_COLCHETES { 
+        strcat(string_matriz, "|");
+        strcat(string_matriz, " ");
+        //strcat(string_matriz, " ");
+        num_linhas++; } 
+    | zero_ou_mais_linhas VIRGULA ABRE_COLCHETES zero_ou_mais_colunas FECHA_COLCHETES {
+        strcat(string_matriz, "|");
+        strcat(string_matriz, " ");
+        //strcat(string_matriz, " ");
+        num_linhas++; 
     }
 ;
 
 cria_matriz: //  [ [ valor zero_ou_mais_valores_interno ] {,[ valor zero_ou_mais_valores_interno ] }∗ ];
-    ABRE_COLCHETES ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas FECHA_COLCHETES PONTO_VIRGULA EOL { 
+    ABRE_COLCHETES ABRE_COLCHETES zero_ou_mais_colunas FECHA_COLCHETES zero_ou_mais_linhas FECHA_COLCHETES PONTO_VIRGULA EOL { 
+        if (num_colunas > max_colunas) 
+            max_colunas = num_colunas;
+        
+        printf("matriz com %d linhas e %d colunas\n", num_linhas, max_colunas);
+    }
+    | ABRE_COLCHETES ABRE_COLCHETES zero_ou_mais_colunas FECHA_COLCHETES FECHA_COLCHETES PONTO_VIRGULA EOL {
+        if (num_colunas > max_colunas) 
+            max_colunas = num_colunas;
         printf("matriz com %d linhas e %d colunas\n", num_linhas, max_colunas);
     }
 ;
 
 %%
 
-
+char* to_string(float value) {     
+    // Determine the maximum size needed for the string     
+    int size = snprintf(NULL, 0, "%f", value);      
+    // Allocate memory for the string     
+    char* result = (char*)malloc(size + 1);  // +1 for the null terminator      
+    // Convert float to string     
+    snprintf(result, size + 1, "%f", value);      
+    return result; 
+}  
+    
+char* concat_strings(const char* str1, const char* str2) {      
+    int size = strlen(str1) + strlen(str2) + 2;      
+    char* result = (char*)malloc(size);     
+    if (!result) {         // Tratamento de erro se a alocação falhar         
+        printf("erro alocação\n");     
+    }      
+    strcpy(result, str1);    
+    strcat(result, " ");// space between str1 and str2     
+    strcat(result, str2);      
+    return result; 
+}
 
 void informacoes_aluno() {
     printf("+--------------------------------------------------------+\n");
@@ -346,13 +420,15 @@ int main(int argc, char** argv) {
 
     settings = create_settings();
     hash = create_hash_table();
-    matriz = create_matrix(10, 10);
+    //matriz = create_matrix(10, 10);
+    string_matriz = malloc(sizeof(char*));
 
     int verificador_comandos = 1;
 
     while (verificador_comandos == 1) {
         printf("\n>");
         verificador_comandos = yyparse();
+        //free(string_matriz);
     }
     return 0;
 }

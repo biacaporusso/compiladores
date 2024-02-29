@@ -21,47 +21,14 @@ HashTable* create_hash_table() {
 
 Matriz* create_matrix(int linhas, int colunas) {
 
-    // Alocando memória para a estrutura da matriz
-    Matriz *matrix = (Matriz*)malloc(sizeof(Matriz));
-    if (matrix == NULL) {
-        printf("Erro ao alocar memória para a matriz.\n");
-        return NULL; // Retorna NULL em caso de erro
-    }
-
-   // Alocando memória para as linhas da matriz
-    matrix->dados = (float**)malloc(linhas * sizeof(float*));
-    if (matrix->dados == NULL) {
-        printf("Erro ao alocar memória para as linhas da matriz.\n");
-        free(matrix); // Libera a memória alocada para a estrutura da matriz
-        return NULL; // Retorna NULL em caso de erro
-    }
-
-    // Alocando memória para as colunas de cada linha da matriz
+    Matriz *matriz = (Matriz*)malloc(sizeof(Matriz));
+    matriz->linhas = linhas;
+    matriz->colunas = colunas;
+    matriz->dados = (float**)malloc(linhas * sizeof(float*));
     for (int i = 0; i < linhas; i++) {
-        matrix->dados[i] = (float*)malloc(colunas * sizeof(float));
-        if (matrix->dados[i] == NULL) {
-            printf("Erro ao alocar memória para as colunas da matriz.\n");
-            // Libera a memória alocada para as linhas da matriz
-            for (int j = 0; j < i; j++) {
-                free(matrix->dados[j]);
-            }
-            free(matrix->dados); // Libera a memória alocada para a estrutura da matriz
-            free(matrix);
-            return NULL; // Retorna NULL em caso de erro
-        }
+        matriz->dados[i] = (float*)malloc(colunas * sizeof(float));
     }
-
-    // Inicializando a matriz com zeros
-    for(int i = 0; i < linhas; i++) {
-        for(int j = 0; j < colunas; j++) {
-            matrix->dados[i][j] = 0;
-        }
-    }
-
-    matrix->linhas = linhas;
-    matrix->colunas = colunas;
-
-    return matrix;
+    return matriz;
 }
 
 void inserir_matriz(Matriz* m, int linha, int coluna, float valor) {
@@ -74,6 +41,44 @@ void inserir_matriz(Matriz* m, int linha, int coluna, float valor) {
     // Insere o valor na posição especificada
     m->dados[linha][coluna] = valor;
     printf("inseriu %f\n", valor);
+}
+
+void liberar_matriz(Matriz *matriz) {
+    for (int i = 0; i < matriz->linhas; i++) {
+        free(matriz->dados[i]);
+    }
+    free(matriz->dados);
+    free(matriz);
+    printf("saiu do libera");
+}
+
+void formatar_matriz(Matriz* matriz ,char* string_matriz, int num_linhas, int num_colunas) {
+    char *token;
+    const char *delim_linha = "|";
+    const char *delim_numero = " ";
+
+    token = strtok(string_matriz, " ");
+    int i = 0;
+    int j = 0;
+
+    // Percorre cada linha
+    while (token) {
+        printf("\ntoken = %s\n", token);
+        if(strcmp(token, "|") == 0) {
+            j++;
+            i=0;
+            printf("\nlinha: %d coluna: %d\n", j, i);
+        } else {
+            if (j < num_linhas && i < num_colunas) {
+                printf("\nlinha: %d coluna: %d\n", j, i);
+                printf("matriz[%d][%d]: %f\n",j,i, strtod(token, NULL));
+                matriz->dados[j][i] = strtod(token, NULL);
+                i++;
+            }
+        }
+        token = strtok(NULL, " ");
+        printf("token depois do strtok: %s\n", token);
+    }
 }
 
 void imprimir_matriz(Matriz *matrix) {
@@ -172,14 +177,13 @@ float get_value(HashTable *hash_table, char *key) {
 }
 
 // Função para imprimir a tabela hash
-/* void printar_hash(struct HashTable *ht) {
+void printar_hash(HashTable *ht) {
+    //printf("Chaves na tabela hash:\n");
     for (int i = 0; i < SIZE; i++) {
         HashNode *current = ht->table[i];
-        printf("%d: ", i);
         while (current != NULL) {
-            printf("(%s, %d) ", current->key, current->value);
+            printf("%s - FLOAT\n", current->key);
             current = current->next;
         }
-        printf("\n");
     }
-} */
+}
