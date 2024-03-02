@@ -1,4 +1,3 @@
-//#define _AST_H_INCLUDED 1
 #ifndef AST_C_AST_H
 #define AST_C_AST_H 1
 
@@ -22,6 +21,11 @@ struct node {
 float RPN_Walk(TreeNode* aux, HashTable* hash);
 void Delete_Tree(TreeNode* aux);
 TreeNode* create_ast_node(int node_type, int value_int, float value_float, char* value_string, TreeNode* left, TreeNode* right);
+int create_matrix(TreeNode* mat);
+void show_matrix();
+int solve_determinant();
+float laplace(int tamanho, float matriz[tamanho][tamanho]);
+
 //void plot(TreeNode* aux, Settings* settings, HashTable* hash);
 
 #endif

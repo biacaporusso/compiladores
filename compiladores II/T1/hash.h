@@ -36,11 +36,7 @@ void deletar_hash(HashTable *ht, char *key);
 float get_value(HashTable *hash_table, char *key);
 void printar_hash(HashTable *ht);
 
-Matriz* create_matrix(int linhas, int colunas);
-void inserir_matriz(Matriz* m, int linha, int coluna, float valor);
-void imprimir_matriz(Matriz *matrix);
-void formatar_matriz( Matriz* m, char* string_matriz, int num_linhas, int num_colunas);
-void liberar_matriz(Matriz *matriz);
+
 
 
 

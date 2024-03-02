@@ -19,7 +19,7 @@ HashTable* create_hash_table() {
     return hashTable;
 }
 
-Matriz* create_matrix(int linhas, int colunas) {
+/* Matriz* create_matrix(int linhas, int colunas) {
 
     Matriz *matriz = (Matriz*)malloc(sizeof(Matriz));
     matriz->linhas = linhas;
@@ -29,7 +29,9 @@ Matriz* create_matrix(int linhas, int colunas) {
         matriz->dados[i] = (float*)malloc(colunas * sizeof(float));
     }
     return matriz;
-}
+} */
+
+
 
 void inserir_matriz(Matriz* m, int linha, int coluna, float valor) {
     // Verifica se a matriz e as coordenadas estão dentro dos limites
@@ -81,7 +83,7 @@ void formatar_matriz(Matriz* matriz ,char* string_matriz, int num_linhas, int nu
     }
 }
 
-void imprimir_matriz(Matriz *matrix) {
+/* void imprimir_matriz(Matriz *matrix) {
     // Verifica se a matriz está alocada corretamente
     if (matrix == NULL) {
         printf("Matriz não alocada.\n");
@@ -95,7 +97,7 @@ void imprimir_matriz(Matriz *matrix) {
         }
         printf("\n");
     }
-}
+} */
 
 
 // Função de hash simples para calcular o índice
