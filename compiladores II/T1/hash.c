@@ -5,6 +5,8 @@
 
 #define SIZE 977
 
+// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- HASH FUNCTIONS =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 HashTable* create_hash_table() {
     HashTable *hashTable = (HashTable*)malloc(sizeof(HashTable)); // Alocando a tabela hash
     if (hashTable == NULL) {
@@ -18,87 +20,6 @@ HashTable* create_hash_table() {
 
     return hashTable;
 }
-
-/* Matriz* create_matrix(int linhas, int colunas) {
-
-    Matriz *matriz = (Matriz*)malloc(sizeof(Matriz));
-    matriz->linhas = linhas;
-    matriz->colunas = colunas;
-    matriz->dados = (float**)malloc(linhas * sizeof(float*));
-    for (int i = 0; i < linhas; i++) {
-        matriz->dados[i] = (float*)malloc(colunas * sizeof(float));
-    }
-    return matriz;
-} */
-
-
-
-void inserir_matriz(Matriz* m, int linha, int coluna, float valor) {
-    // Verifica se a matriz e as coordenadas estão dentro dos limites
-    if (m == NULL || linha < 0 || linha >= m->linhas || coluna < 0 || coluna >= m->colunas) {
-        printf("Coordenadas inválidas ou matriz não alocada.\n");
-        return;
-    }
-
-    // Insere o valor na posição especificada
-    m->dados[linha][coluna] = valor;
-    printf("inseriu %f\n", valor);
-}
-
-void liberar_matriz(Matriz *matriz) {
-    for (int i = 0; i < matriz->linhas; i++) {
-        free(matriz->dados[i]);
-    }
-    free(matriz->dados);
-    free(matriz);
-    printf("saiu do libera");
-}
-
-void formatar_matriz(Matriz* matriz ,char* string_matriz, int num_linhas, int num_colunas) {
-    char *token;
-    const char *delim_linha = "|";
-    const char *delim_numero = " ";
-
-    token = strtok(string_matriz, " ");
-    int i = 0;
-    int j = 0;
-
-    // Percorre cada linha
-    while (token) {
-        printf("\ntoken = %s\n", token);
-        if(strcmp(token, "|") == 0) {
-            j++;
-            i=0;
-            printf("\nlinha: %d coluna: %d\n", j, i);
-        } else {
-            if (j < num_linhas && i < num_colunas) {
-                printf("\nlinha: %d coluna: %d\n", j, i);
-                printf("matriz[%d][%d]: %f\n",j,i, strtod(token, NULL));
-                matriz->dados[j][i] = strtod(token, NULL);
-                i++;
-            }
-        }
-        token = strtok(NULL, " ");
-        printf("token depois do strtok: %s\n", token);
-    }
-}
-
-/* void imprimir_matriz(Matriz *matrix) {
-    // Verifica se a matriz está alocada corretamente
-    if (matrix == NULL) {
-        printf("Matriz não alocada.\n");
-        return;
-    }
-
-    // Percorre a matriz e imprime cada elemento
-    for (int i = 0; i < matrix->linhas; i++) {
-        for (int j = 0; j < matrix->colunas; j++) {
-            printf(" %f ", matrix->dados[i][j]);
-        }
-        printf("\n");
-    }
-} */
-
 
 // Função de hash simples para calcular o índice
 int calculo_hash(char *key) {
@@ -188,4 +109,160 @@ void printar_hash(HashTable *ht) {
             current = current->next;
         }
     }
+}
+
+
+
+// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- MATRIX FUNCTIONS =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+
+Matriz* create_matrix() {
+
+    Matriz *matriz = (Matriz*)malloc(sizeof(Matriz));
+    matriz->linhas = 0;
+    matriz->colunas = 0;
+    matriz->dados = NULL;
+    return matriz;
+} 
+
+void clear_matrix(Matriz *matriz) {
+    if (matriz->dados != NULL) {
+        // Free memory for each row
+        for (int i = 0; i < matriz->linhas; i++) {
+            free(matriz->dados[i]);
+        }
+        // Free memory for the array of pointers (rows)
+        free(matriz->dados);
+        matriz->dados = NULL;
+    }
+    matriz->linhas = 0;
+    matriz->colunas = 0;
+}
+
+void insert_matrix(Matriz *matriz, Pilha* pilha_primeiros, Pilha* pilha, int num_linhas, int num_colunas) {
+
+    int descarte;
+    printf("linhas: %d\ncolunas: %d\n", num_linhas, num_colunas);
+
+    if (num_linhas <= 10 && num_colunas <= 10) {
+
+        // Allocate memory for the matrix if it hasn't been allocated yet
+        if (matriz->dados == NULL) {
+            matriz->dados = (float**)malloc(num_linhas * sizeof(float*));
+            for (int i = 0; i < num_linhas; i++) {
+                matriz->dados[i] = (float*)malloc(num_colunas * sizeof(float));
+                for (int j = 0; j < num_colunas; j++) {
+                    matriz->dados[i][j] = 0;
+                }
+            }
+            matriz->linhas = num_linhas;
+            matriz->colunas = num_colunas;
+        }
+
+        printf("matriz inicializada: \n");
+        imprimir_matriz(matriz);
+
+        Node* no_pilha;
+
+        // Insert first values from pilha_primeiros into matrix
+        for (int i = 0; i < num_linhas; i++) {
+            if (pilha_primeiros->top != NULL) {
+                printf("\n\ni: %d\n", i);
+                printf("j: 0\n");
+                printf("  value: %f caractere: %c\n", pilha_primeiros->top->value, pilha_primeiros->top->caractere);
+                no_pilha = pop(pilha_primeiros);
+                if(no_pilha != NULL)
+                    matriz->dados[i][0] = no_pilha->value;
+                //matriz->dados[i][0] = pop(pilha_primeiros);
+            }
+        }
+
+        float descarte; 
+        int aux_linha = num_linhas;
+        int aux_coluna = 1;
+
+        no_pilha = pop(pilha);
+
+        while (no_pilha != NULL) {
+            if (no_pilha->caractere == '|') {
+                aux_linha--;
+                aux_coluna = 1;
+            } else {
+                matriz->dados[aux_linha][aux_coluna] = no_pilha->value;
+                aux_coluna++;
+            }
+            free(no_pilha);
+            no_pilha = pop(pilha);
+        }
+    }
+
+    clear_stack(pilha_primeiros);
+    clear_stack(pilha);
+}
+
+#include <stdio.h>
+
+#include <stdio.h>
+
+void imprimir_matriz(Matriz *matrix) {
+    // Verifica se a matriz está alocada corretamente
+    if (matrix == NULL) {
+        printf("Matriz não alocada.\n");
+        return;
+    }
+
+    if (matrix->colunas == 1) {
+        printf("\n");
+        printf("+-");
+        for (int i = 0; i < matrix->colunas*8; i++) {
+            printf(" ");
+        }
+        printf("-+\n");
+        // Percorre a matriz e imprime cada elemento
+        for (int i = 0; i < matrix->linhas; i++) {
+            printf("|");
+            for (int j = 0; j < matrix->colunas; j++) {
+                printf(" %f", matrix->dados[i][j]);
+            }
+            printf(" |\n");
+        }
+        printf("+-");
+        for (int i = 0; i < matrix->colunas*8; i++) {
+            printf(" ");
+        }
+        printf("-+\n");
+    } 
+    else 
+    {
+        printf("\n");
+        printf("+-");
+        for (int i = 0; i < matrix->colunas*8; i++) {
+            printf(" ");
+        }
+        printf("-+\n");
+        // Percorre a matriz e imprime cada elemento
+        for (int i = 0; i < matrix->linhas; i++) {
+            printf("|");
+            for (int j = 0; j < matrix->colunas; j++) {
+                printf(" %f", matrix->dados[i][j]);
+            }
+            printf(" |\n");
+        }
+        printf("+-");
+        for (int i = 0; i < matrix->colunas*8; i++) {
+            printf(" ");
+        }
+        printf("-+\n");
+    }
+}
+
+
+void liberar_matriz(Matriz *matriz) {
+    for (int i = 0; i < matriz->linhas; i++) {
+        free(matriz->dados[i]);
+    }
+    free(matriz->dados);
+    free(matriz);
+    printf("saiu do libera");
 }

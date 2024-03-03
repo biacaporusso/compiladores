@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "pilha.h"
 
 typedef struct matriz {
     int linhas;
@@ -37,7 +38,10 @@ float get_value(HashTable *hash_table, char *key);
 void printar_hash(HashTable *ht);
 
 
-
-
+Matriz* create_matrix();
+void insert_matrix(Matriz *matriz, Pilha* pilha_primeiros, Pilha* pilha, int num_linhas, int num_colunas);
+void imprimir_matriz(Matriz *matrix);
+void liberar_matriz(Matriz *matriz);
+void clear_matrix(Matriz *matriz);
 
 #endif

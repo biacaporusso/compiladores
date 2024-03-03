@@ -5,6 +5,7 @@
     #include "ast.h"
     #include "hash.h"
     #include "settings.h"
+    #include "pilha.h"
 
     extern int yylex();
     extern char* yytext;
@@ -15,6 +16,8 @@
     HashTable* hash = NULL;
     Settings* settings = NULL;
     Matriz* matriz = NULL;
+    Pilha* pilha_primeirosValores = NULL;
+    Pilha* pilha = NULL;
 
     // variaveis globais
     int num_linhas = 1;
@@ -105,9 +108,6 @@
 %type <ast> valor
 %type <ast> func_trigonometrica
 
-%type <ast> um_ou_mais_colunas
-%type <ast> zero_ou_mais_linhas
-
 %start inicio
 
 %%
@@ -131,6 +131,23 @@ comando:
         return 1; 
         }
     | MATRIX IGUAL cria_matriz { 
+        printf("\nPrimeiros valores: \n");
+        print_pilha(pilha_primeirosValores);
+        printf("\nRestante: \n");
+        print_pilha(pilha);
+
+        printf("num_linhas: %d\nnum_colunas: %d\nmax_colunas: %d\n", num_linhas, num_colunas, max_colunas);
+
+        insert_matrix(matriz, pilha_primeirosValores, pilha, num_linhas, max_colunas);
+        imprimir_matriz(matriz);
+
+        num_linhas = 1;
+        num_colunas = 1;
+        max_colunas = 1;
+
+        clear_matrix(matriz);
+        //freeStack(pilha_primeirosValores);
+        //freeStack(pilha);
         return 1; 
         }
     | SOLVE p5 {}
@@ -170,11 +187,12 @@ comando:
 p1:
     SETTINGS PONTO_VIRGULA EOL { show_settings(settings); return 1; }
     | MATRIX PONTO_VIRGULA EOL { 
-        if (matriz_inserida == 0) {
+        if (!matriz) {
             printf("No Matrix defined!\n");
             return 1;
         } else {
-            show_matrix(); 
+            imprimir_matriz(matriz);
+            //show_matrix(); 
         }
     }
     | SYMBOLS PONTO_VIRGULA EOL { printar_hash(hash); }
@@ -232,11 +250,11 @@ p5:
             printf("No Matrix defined!\n");
             return 1;
         } 
-        int erro = solve_determinant();
+        /* int erro = solve_determinant();
         if(erro) {
             printf("ERROR: Matrix format incorrect!\n");
             return 1;
-        }
+        } */
     }
     | LINEAR_SYSTEM PONTO_VIRGULA EOL {
         if (matriz->linhas != matriz->colunas + 1) {
@@ -346,48 +364,39 @@ valor:
     }
 ;
 
-/* contador_colunas:
+contador_colunas:
     zero_ou_mais_colunas { 
         if (num_colunas > max_colunas) 
             max_colunas = num_colunas;
         num_colunas = 1;
-        //printf("inserindo |\n");
-        //insere
+        insert_info(pilha, 0.0, '|'); // | = fim da linha
+
     }
-; */
+; 
 
 //  { , valor }∗                                ** numero de colunas
-um_ou_mais_colunas:
-    VIRGULA valor um_ou_mais_colunas {
-        TreeNode* aux = create_ast_node(MATRIX, $2->value_int, $2->value_float, NULL, NULL, $3);
-        $$ = aux;
+zero_ou_mais_colunas:
+    VIRGULA valor zero_ou_mais_colunas {
+        insert_info(pilha, $2->value_float, '&'); // & = representa que é número
+        num_colunas++;
     }
-    | { $$ = NULL; }
+    | { }
 
 ;
 
 //   { ∗ ] }∗  , [ valor { , valor }            ** zero ou mais linhas
 zero_ou_mais_linhas: 
-    VIRGULA ABRE_COLCHETES valor um_ou_mais_colunas FECHA_COLCHETES zero_ou_mais_linhas { 
-        TreeNode* aux = create_ast_node(MATRIX, $3->value_int, $3->value_float, NULL, $4, $6);
-        $$ = aux;
-    } 
-    | { $$ = NULL; }
+    VIRGULA ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas { 
+        insert_info(pilha_primeirosValores, $3->value_float, '@'); // @ = fim da coluna
+        num_linhas++;
+    }
+    | { }
 ;
 
 cria_matriz: //  [ [ valor zero_ou_mais_valores_interno ] {,[ valor zero_ou_mais_valores_interno ] }∗ ];
-    ABRE_COLCHETES ABRE_COLCHETES valor um_ou_mais_colunas FECHA_COLCHETES zero_ou_mais_linhas FECHA_COLCHETES PONTO_VIRGULA EOL { 
+    ABRE_COLCHETES ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas FECHA_COLCHETES PONTO_VIRGULA EOL { 
 
-
-        //TreeNode* create_ast_node(int node_type, int value_int, float value_float, char* value_string, TreeNode* left, TreeNode* right)
-        TreeNode* aux = create_ast_node(MATRIX, $3->value_int, $3->value_float, NULL, $4, $6);
-        int erro = create_matrix(aux);
-        if(erro) {
-            printf("ERROR: Matrix format incorrect!\n");
-            return 1;
-        } else {
-            matriz_inserida = 1;
-        }
+        insert_info(pilha_primeirosValores, $3->value_float, '@'); // @ = fim da coluna
     }
 ;
 
@@ -419,7 +428,9 @@ int main(int argc, char** argv) {
 
     settings = create_settings();
     hash = create_hash_table();
-    //matriz = create_matrix(10, 10);
+    pilha_primeirosValores = create_pilha();
+    pilha = create_pilha();
+    matriz = create_matrix();
     string_matriz = malloc(sizeof(char*));
 
     int verificador_comandos = 1;
