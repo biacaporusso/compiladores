@@ -18,7 +18,7 @@ typedef struct pilha {
 Pilha* create_pilha();
 void insert_info(Pilha* pilha, float value, char caractere);
 Node* pop(Pilha* pilha);
-void freeStack(Pilha* pilha);
+void free_pilha(Pilha* pilha);
 void print_pilha(Pilha* pilha);
 void clear_stack(Pilha* pilha);
 float show_top(Pilha* pilha);

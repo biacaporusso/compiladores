@@ -23,14 +23,15 @@
     int num_linhas = 1;
     int num_colunas = 1;
     int max_colunas = 1;
-    char* string_matriz;
     int matriz_inserida = 0;
-    
+    float pi = 3.141593;
+
     int funcao_inserida = 0;
 
     // DECLARAÇÃO DAS FUNÇÕES
     void informacoes_aluno();
     void comando_sum(char* variavel, TreeNode *lim_inferior, TreeNode *lim_superior, TreeNode *no_expr, HashTable* hash);
+    void integrate(float lim_inferior, float lim_superior, TreeNode *no_expr, HashTable* hash);
     char* concat_strings(const char* str1, const char* str2);
     char* to_string(float value);
 
@@ -127,36 +128,27 @@ comando:
             printf("ERROR: lower limit must be smaller than upper limit\n");
             return 1;
         }
-        /*comando_integrate($3->value_float, $5->value_float, $7);*/ 
+        integrate($3->value_float, $5->value_float, $7, hash);
         return 1; 
         }
     | MATRIX IGUAL cria_matriz { 
-        printf("\nPrimeiros valores: \n");
-        print_pilha(pilha_primeirosValores);
-        printf("\nRestante: \n");
-        print_pilha(pilha);
-
-        printf("num_linhas: %d\nnum_colunas: %d\nmax_colunas: %d\n", num_linhas, num_colunas, max_colunas);
-
+        clear_matrix(matriz);
         insert_matrix(matriz, pilha_primeirosValores, pilha, num_linhas, max_colunas);
-        imprimir_matriz(matriz);
-
         num_linhas = 1;
         num_colunas = 1;
         max_colunas = 1;
-
-        clear_matrix(matriz);
-        //freeStack(pilha_primeirosValores);
-        //freeStack(pilha);
+        clear_stack(pilha_primeirosValores);
+        clear_stack(pilha);
         return 1; 
-        }
+    }
     | SOLVE p5 {}
     | ABOUT PONTO_VIRGULA EOL { informacoes_aluno(); return 1; }
-    | RPN ABRE_PARENTESES exp FECHA_PARENTESES PONTO_VIRGULA EOL {}
+    | RPN ABRE_PARENTESES exp FECHA_PARENTESES PONTO_VIRGULA EOL {
+        comando_RPN($3, hash);
+    }
     | SUM ABRE_PARENTESES IDENTIFICADOR VIRGULA valor INTERVALO valor VIRGULA exp FECHA_PARENTESES PONTO_VIRGULA EOL { comando_sum($3, $5, $7, $9, hash); return 1; }
     | IDENTIFICADOR PONTO_VIRGULA EOL {
         int existe;
-        //printf("antes do search");
         existe = search_hash(hash, $1);
         if (existe == -1) {
             printf("Undefined symbol\n");
@@ -167,7 +159,7 @@ comando:
     }
     | IDENTIFICADOR ATRIBUICAO exp PONTO_VIRGULA EOL {
         printf("%f\n", RPN_Walk($3, hash));
-        inserir_hash(hash, $1, RPN_Walk($3, hash));
+        inserir_hash(hash, $1, RPN_Walk($3, hash), IDENTIFICADOR);
         Delete_Tree($3);
         return 1;
     }
@@ -191,7 +183,8 @@ p1:
             printf("No Matrix defined!\n");
             return 1;
         } else {
-            imprimir_matriz(matriz);
+            printf(" @@@@@ settings->float_precision = %d\n", settings->float_precision);
+            imprimir_matriz(matriz, settings);
             //show_matrix(); 
         }
     }
@@ -202,10 +195,12 @@ p3:
     H_VIEW valor INTERVALO valor PONTO_VIRGULA EOL { 
         if ($2->value_float < $4->value_float) {
             settings->h_view_lo = $2->value_float; settings->h_view_hi = $4->value_float; 
-        } else {
-            printf("ERROR: h_view_lo must be smaller than h_view_hi\n");
-            return 1;
         }
+        else {
+            printf("\nERROR: h_view_lo must be smaller than h_view_hi\n");
+        }
+        
+        return 1;
     }
     | V_VIEW valor INTERVALO valor PONTO_VIRGULA EOL { 
         if ($2->value_float < $4->value_float) {
@@ -227,7 +222,14 @@ p3:
             return 1;
         }
     }
-    | FLOAT PRECISION valor PONTO_VIRGULA EOL { settings->float_precision = $3->value_int; }
+    | FLOAT PRECISION valor PONTO_VIRGULA EOL { 
+        if ($3->value_int < 0 || $3->value_int > 8)
+            printf("ERROR: float precision must be from 0 to 8\n");
+        else
+            settings->float_precision = $3->value_int; 
+
+        return 1;
+    }
 ;
 
 p4:
@@ -240,27 +242,45 @@ p4:
             printf("plot");
         }
     }
-    | ABRE_PARENTESES func_trigonometrica FECHA_PARENTESES PONTO_VIRGULA EOL {}
+    | ABRE_PARENTESES exp FECHA_PARENTESES PONTO_VIRGULA EOL {
+
+        AST = $2;
+        funcao_inserida = 1;
+        if(AST) {
+            printf("Plot\n");
+        }
+    }
 ;
 
 p5:
     DETERMINANT PONTO_VIRGULA EOL {
-
-        if(matriz_inserida == 0) {
+        if (!matriz) {
             printf("No Matrix defined!\n");
             return 1;
-        } 
-        /* int erro = solve_determinant();
-        if(erro) {
-            printf("ERROR: Matrix format incorrect!\n");
-            return 1;
-        } */
+        } else {
+            if(matriz->linhas == matriz->colunas) {
+                float det = calculo_determinante(matriz);
+                printf("\n%f\n", det);
+                clear_matrix(matriz);
+                return 1;
+            } else {
+                printf("Matrix format incorrect!\n");
+                return 1;
+            }
+        }
     }
     | LINEAR_SYSTEM PONTO_VIRGULA EOL {
-        if (matriz->linhas != matriz->colunas + 1) {
-            printf("Matrix format incorrect!\n");
+
+        if (!matriz) {
+            printf("No Matrix defined!\n");
             return 1;
         }
+        
+        int ls = calculo_sistema_linear(matriz);
+        if (ls == 1) {
+            printf("Matrix format incorrect!\n");
+        }
+        return 1;
     }
 ;
 
@@ -275,6 +295,10 @@ exp:
     }
     | exp SUBTRACAO factor { 
         TreeNode* aux = create_ast_node(SUBTRACAO, -2, -2, NULL, $1, $3);
+        $$ = aux;
+    }
+    | PI {
+        TreeNode* aux = create_ast_node(PI, 3, pi, NULL, NULL, NULL);
         $$ = aux;
     }
 ;
@@ -333,7 +357,13 @@ term:
     | ABRE_PARENTESES exp FECHA_PARENTESES {
         $$ = $2;
     } 
-
+    /* ABRE_COLCHETES ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas FECHA_COLCHETES PONTO_VIRGULA EOL {
+        TreeNode* aux = create_ast_node(MATRIZ, -2, -2, NULL, NULL);
+        insert_info(pilha_primeirosValores, $3->value_float, '@');
+        //                 chave (identif),   valor ???   tipo
+        //inserir_hash(hash, $nome_da_matriz, 33333333333, MATRIZ);
+        $$ = aux;   // fix
+    } */
 ;
 
 valor:
@@ -361,6 +391,11 @@ valor:
     | NUMERO_INTEIRO { 
         TreeNode* aux = create_ast_node(NUMERO_INTEIRO, $1, (float)$1, NULL, NULL, NULL);
         $$ = aux; 
+    }
+    | PI { 
+        TreeNode* aux = create_ast_node(PI, 3, 3.141592653, NULL, NULL, NULL);
+        $$ = aux;
+        //inserir_hash(hash, "pi", 3.141592653);
     }
 ;
 
@@ -417,11 +452,24 @@ void comando_sum(char* variavel, TreeNode *lim_inferior, TreeNode *lim_superior,
     float result_somatorio = 0;
 
     for (int i=lim_inferior->value_int; i<=lim_superior->value_int; i++) {
-        inserir_hash(hash, variavel, i);
+        inserir_hash(hash, variavel, i, IDENTIFICADOR);
         result_somatorio += RPN_Walk(no_expr, hash);
     }
 
     printf("%f", result_somatorio);
+}
+
+void integrate(float lim_inferior, float lim_superior, TreeNode *no_expr, HashTable* hash) {
+
+    float result_integral = 0;
+    float h = (lim_superior - lim_inferior) / settings->integral_steps;
+
+    for (int i=0; i<settings->integral_steps; i++) {
+        result_integral += RPN_Walk(no_expr, hash);
+    }
+
+    result_integral *= h;
+    printf("  INTEGAL = %f", result_integral);
 }
 
 int main(int argc, char** argv) {
@@ -431,15 +479,20 @@ int main(int argc, char** argv) {
     pilha_primeirosValores = create_pilha();
     pilha = create_pilha();
     matriz = create_matrix();
-    string_matriz = malloc(sizeof(char*));
 
     int verificador_comandos = 1;
 
     while (verificador_comandos == 1) {
         printf("\n>");
         verificador_comandos = yyparse();
-        //free(string_matriz);
     }
+
+    free(settings);
+    free_hash(hash);
+    free_pilha(pilha_primeirosValores);
+    free_pilha(pilha);
+    free_matriz(matriz);
+
     return 0;
 }
 

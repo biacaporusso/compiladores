@@ -55,7 +55,7 @@ float show_top(Pilha* pilha) {
 }
 
 // Function to free all memory allocated for the pilha
-void freeStack(Pilha* pilha) {
+void free_pilha(Pilha* pilha) {
     while (pilha->top != NULL) {
         Node* temp = pilha->top;
         pilha->top = pilha->top->next;
@@ -67,14 +67,11 @@ void freeStack(Pilha* pilha) {
 
 void print_pilha(Pilha* pilha) {
     if (pilha->top == NULL) {
-        printf("Stack is empty\n");
         return;
     }
 
-    printf("Stack elements:\n");
     Node* current = pilha->top;
     while (current != NULL) {
-        printf("Value: %.2f, Caractere: %c\n", current->value, current->caractere);
         current = current->next;
     }
 }

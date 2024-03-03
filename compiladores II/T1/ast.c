@@ -39,7 +39,6 @@ float RPN_Walk(TreeNode* aux, HashTable* hash) {
 				resultado = (int)valor_esquerdo % (int)valor_direito;
 				break;
 			case NUMERO_INTEIRO:
-			printf("entrou no case\n");
 				resultado = (float) aux->value_int;
 				break;
 			case NUMERO_REAL:
@@ -85,6 +84,62 @@ float RPN_Walk(TreeNode* aux, HashTable* hash) {
     return resultado;
 }
 
+void comando_RPN(TreeNode* aux, HashTable* hash) {
+
+    if(aux) {
+
+        float valor_esquerdo = RPN_Walk(aux->left, hash);
+        float valor_direito = RPN_Walk(aux->right, hash);
+
+		switch(aux->node_type) {
+			case ADICAO: 
+				printf("+ ");
+				break;
+			case SUBTRACAO:
+				printf("- ");
+				break;
+			case MULTIPLICACAO:
+				printf("* ");
+				break;
+			case DIVISAO:
+				printf("/ ");
+				break;
+			case POTENCIACAO:
+				printf("^ ");
+				break;
+			case RESTO_DIVISAO:
+				printf("%% ");
+				break;
+			case NUMERO_INTEIRO:
+				printf("%d ", (int)aux->value_float);
+				break;
+			case NUMERO_REAL:
+				printf("%f ", aux->value_float);
+				break;
+			case SEN:
+				printf("SEN ");
+				break;
+			case COS:
+				printf("COS ");
+				break;
+			case TAN:
+				printf("TAN ");
+				break;
+			case ABS:
+				printf("ABS ");
+				break;
+			case IDENTIFICADOR:
+				printf("%s ", aux->value_string);
+				break;
+			default:
+				printf("ERROR: INVALID TYPE ");
+				break;
+
+		} 
+    }
+	printf("\n");
+}
+
 void Delete_Tree(TreeNode* aux) {
 
     if(aux) {
@@ -112,7 +167,6 @@ TreeNode* create_ast_node(int node_type, int value_int, float value_float, char*
 }
 
 
-/*
 void plot(TreeNode* aux, Settings* settings, HashTable* hash) {
     
 	char display[25][80];
@@ -161,4 +215,3 @@ void plot(TreeNode* aux, Settings* settings, HashTable* hash) {
 		}
 	}	
 }
-*/
