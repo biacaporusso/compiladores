@@ -1,0 +1,106 @@
+K = 8
+
+vr1: 0
+vr2: 1
+vr3: 2
+vr4: 3
+vr5: 4
+vr6: 5
+vr7: 3
+vr8: 6
+vr9: 0
+vr10: 0
+vr11: 7
+----------------------------------------
+K = 7
+
+vr1: 0
+vr2: 1
+vr3: 2
+vr4: 3
+vr5: SPILL
+vr6: 5
+vr7: 3
+vr8: 6
+vr9: 0
+vr10: 0
+vr11: 4
+----------------------------------------
+K = 6
+
+vr1: 0
+vr2: SPILL
+vr3: 2
+vr4: 3
+vr5: SPILL
+vr6: 5
+vr7: 3
+vr8: 4
+vr9: 0
+vr10: 0
+vr11: 1
+----------------------------------------
+K = 5
+
+vr1: 0
+vr2: SPILL
+vr3: 2
+vr4: 3
+vr5: SPILL
+vr6: 4
+vr7: 3
+vr8: SPILL
+vr9: 0
+vr10: 0
+vr11: 1
+----------------------------------------
+K = 4
+
+vr1: 0
+vr2: SPILL
+vr3: 2
+vr4: 3
+vr5: SPILL
+vr6: 1
+vr7: SPILL
+vr8: SPILL
+vr9: 0
+vr10: 0
+vr11: 3
+----------------------------------------
+K = 3
+
+vr1: 0
+vr2: SPILL
+vr3: SPILL
+vr4: 1
+vr5: SPILL
+vr6: 2
+vr7: SPILL
+vr8: SPILL
+vr9: 0
+vr10: 0
+vr11: 1
+----------------------------------------
+K = 2
+
+vr1: 0
+vr2: SPILL
+vr3: SPILL
+vr4: 1
+vr5: SPILL
+vr6: SPILL
+vr7: SPILL
+vr8: SPILL
+vr9: 0
+vr10: 0
+vr11: 1
+----------------------------------------
+----------------------------------------
+K = 8: Successful Allocation
+K = 7: SPILL on interation(s): 10
+K = 6: SPILL on interation(s): 7, 10
+K = 5: SPILL on interation(s): 5, 7, 10
+K = 4: SPILL on interation(s): 4, 5, 7, 10
+K = 3: SPILL on interation(s): 3, 4, 5, 7, 10
+K = 2: SPILL on interation(s): 2, 3, 4, 5, 7, 10
