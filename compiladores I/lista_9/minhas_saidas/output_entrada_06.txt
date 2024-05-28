@@ -1,0 +1,8 @@
+error do eat
+error do eat
+error do eat
+CADEIA ACEITAerror do eat
+error do eat
+
+CADEIA ACEITA
+ERRO SINTATICO EM: 13 ESPERADO: if, begin, print

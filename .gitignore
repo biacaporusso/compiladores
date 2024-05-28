@@ -11,12 +11,11 @@ rascunhos/
 *.o
 *.out
 *lex.yy.c
-*.txt
+l6e1
 l7e1
 l7e2
 l7e3
 cstats
-*.zip
 rascunhos
 script_teste_lexico
 lista_9/ex1
@@ -25,7 +24,6 @@ lista_9/ex1
 sintatico/sintatico
 sintatico/rascunho/
 l9e1
-testar_sintatico.sh
 sintatico/saidas/
 sintatico/saidas_padrao/
 sintatico/testes/
@@ -33,5 +31,12 @@ lista_9/minhas_saidas
 lista_9/saidas_padrao
 dcmat
 Zone.Identifier
-*.zip
 /compiladores II/teste/
+diff.txt
+LISTA_5_EXERCICIO_1.zip
+LISTA_5_EXERCICIO_2.zip
+LISTA_6_EXERCICIO_1.zip
+LISTA_7_EXERCICIO_1.zip
+LISTA_7_EXERCICIO_2.zip
+LISTA_7_EXERCICIO_3.zip
+LISTA_7_EXERCICIO_4.zip
