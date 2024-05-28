@@ -20,11 +20,6 @@ cstats
 rascunhos
 script_teste_lexico
 lista_9/ex1
-trabalho_1/diff.txt
-trabalho_1/trabalho_1
-trabalho_1/minhas_saidas/
-trabalho_1/saidas_padrao/
-trabalho_1/testes/
 *sintatico.tab.c 
 *sintatico.tab.h
 sintatico/sintatico
@@ -34,11 +29,9 @@ testar_sintatico.sh
 sintatico/saidas/
 sintatico/saidas_padrao/
 sintatico/testes/
-script.py
 lista_9/minhas_saidas
 lista_9/saidas_padrao
 dcmat
 Zone.Identifier
 *.zip
-portugol/minhas_saidas
-portugol/saidas_padrao
+/compiladores II/teste/

@@ -21,6 +21,5 @@ Node* pop(Pilha* pilha);
 void free_pilha(Pilha* pilha);
 void print_pilha(Pilha* pilha);
 void clear_stack(Pilha* pilha);
-float show_top(Pilha* pilha);
 
 #endif

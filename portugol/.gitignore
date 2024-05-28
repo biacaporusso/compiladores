@@ -1,0 +1,6 @@
+.idea
+cmake-build-debug
+/minhas_saidas
+diff.txt
+*.o
+/portugol

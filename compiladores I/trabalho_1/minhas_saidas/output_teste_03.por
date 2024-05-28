@@ -1,1 +1,0 @@
-ERRO DE SINTAXE. Linha: 12 Coluna: 7 -> '   a <- '

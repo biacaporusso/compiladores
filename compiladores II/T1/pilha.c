@@ -44,16 +44,6 @@ Node* pop(Pilha* pilha) {
     return temp;
 }
 
-float show_top(Pilha* pilha) {
-    if (pilha->top == NULL) {
-        printf("Pilha is empty\n");
-        return -1;
-    }
-
-    float valor = pilha->top->value;
-    return valor;
-}
-
 // Function to free all memory allocated for the pilha
 void free_pilha(Pilha* pilha) {
     while (pilha->top != NULL) {

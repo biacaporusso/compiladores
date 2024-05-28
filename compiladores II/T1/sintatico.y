@@ -18,6 +18,7 @@
     Matriz* matriz = NULL;
     Pilha* pilha_primeirosValores = NULL;
     Pilha* pilha = NULL;
+    Matriz* matriz_aux = NULL;
 
     // variaveis globais
     int num_linhas = 1;
@@ -25,8 +26,14 @@
     int max_colunas = 1;
     int matriz_inserida = 0;
     float pi = 3.141593;
+    float e = 2.71828182;
+    int erro = 0;
+    int inseriu = 0;
+    int inseriu2 = 0;
 
     int funcao_inserida = 0;
+
+    extern int erro_eval_exp;
 
     // DECLARAÇÃO DAS FUNÇÕES
     void informacoes_aluno();
@@ -108,6 +115,8 @@
 %type <identifier> IDENTIFICADOR
 %type <ast> valor
 %type <ast> func_trigonometrica
+%type <ast> exponenciacao
+%type <ast> cria_matriz
 
 %start inicio
 
@@ -123,17 +132,18 @@ comando:
     | QUIT EOL { return 0; }
     | SET p3 { return 1; }
     | PLOT p4 { return 1; }
-    | INTEGRATE ABRE_PARENTESES valor INTERVALO valor VIRGULA func_trigonometrica FECHA_PARENTESES  PONTO_VIRGULA EOL { 
+    | INTEGRATE ABRE_PARENTESES valor INTERVALO valor VIRGULA exp FECHA_PARENTESES  PONTO_VIRGULA EOL { 
         if($3->value_float > $5->value_float) {
-            printf("ERROR: lower limit must be smaller than upper limit\n");
+            printf("\nERROR: lower limit must be smaller than upper limit\n");
             return 1;
         }
         integrate($3->value_float, $5->value_float, $7, hash);
         return 1; 
         }
     | MATRIX IGUAL cria_matriz { 
+        //inseriu = 0;
         clear_matrix(matriz);
-        insert_matrix(matriz, pilha_primeirosValores, pilha, num_linhas, max_colunas);
+        inseriu2 = insert_matrix(matriz, pilha_primeirosValores, pilha, num_linhas, max_colunas);
         num_linhas = 1;
         num_colunas = 1;
         max_colunas = 1;
@@ -144,7 +154,10 @@ comando:
     | SOLVE p5 {}
     | ABOUT PONTO_VIRGULA EOL { informacoes_aluno(); return 1; }
     | RPN ABRE_PARENTESES exp FECHA_PARENTESES PONTO_VIRGULA EOL {
-        comando_RPN($3, hash);
+        printf("\nExpression in RPN format:\n\n");
+        comando_RPN($3, hash, settings);
+        printf("\n");
+        return 1;
     }
     | SUM ABRE_PARENTESES IDENTIFICADOR VIRGULA valor INTERVALO valor VIRGULA exp FECHA_PARENTESES PONTO_VIRGULA EOL { comando_sum($3, $5, $7, $9, hash); return 1; }
     | IDENTIFICADOR PONTO_VIRGULA EOL {
@@ -153,39 +166,88 @@ comando:
         if (existe == -1) {
             printf("Undefined symbol\n");
         } else {
-            printf("%s = %.f\n", $1, get_value(hash, $1));
+            int tipo = get_tipo(hash, $1);
+            if(tipo == MATRIX) {
+                Matriz* matriz_imprimir = get_matriz_hash(hash, $1);
+                imprimir_matriz(matriz_imprimir, settings);
+            } else {
+                printf("%s = %.*f\n", $1, settings->float_precision, get_value(hash, $1));
+            }
         }
         return 1;
     }
     | IDENTIFICADOR ATRIBUICAO exp PONTO_VIRGULA EOL {
-        printf("%f\n", RPN_Walk($3, hash));
-        inserir_hash(hash, $1, RPN_Walk($3, hash), IDENTIFICADOR);
+
+        erro_eval_exp = 0;
+        Result* rpn_id2 = RPN_identifier($3, hash);
+
+        if((int)rpn_id2->value == 0) {
+
+            Result* result = (Result*)malloc(sizeof(Result));
+            result = RPN_Walk($3, hash);
+            if(result->type == MATRIX) {
+                imprimir_matriz(result->matriz, settings);
+            } else
+                printf("%f\n", result->value);
+            //inserir_hash(HashTable, char *key, value, int tipo,    matriz)
+            inserir_hash(hash, $1, result->value, result->type, result->matriz);
+            free_result(result);
+        } 
         Delete_Tree($3);
+        erro_eval_exp = 0;
         return 1;
     }
-    | exp EOL { 
-        if (search_hash(hash, $1->value_string) == -1) {
-            printf("Undefined symbol [%s]\n", $1->value_string);
-        } else {
-            float result = RPN_Walk($1, hash); 
-            printf("%.*f\n", settings->float_precision, RPN_Walk($1, hash));
+    | IDENTIFICADOR ATRIBUICAO cria_matriz {
+        clear_matrix(matriz_aux);
+        int inseriu = 0;
+        inseriu = insert_matrix(matriz_aux, pilha_primeirosValores, pilha, num_linhas, max_colunas);
+
+        if (inseriu == 1) {
+            //void inserir_hash(HashTable *ht, char *key, float value, int tipo, Matriz* matriz);
+            inserir_hash(hash, $1, -2, MATRIX, matriz_aux);
+            imprimir_matriz(matriz_aux, settings);
+            clear_matrix(matriz_aux);
         }
 
+        //Result* result = (Result*)malloc(sizeof(Result));
+        //result = RPN_Walk($3, hash);
+
+        num_linhas = 1;
+        num_colunas = 1;
+        max_colunas = 1;
+        clear_stack(pilha_primeirosValores);
+        clear_stack(pilha);
+        return 1; 
+    }
+    | exp EOL { 
+
+        Result* rpn_id = RPN_identifier($1, hash);
+
+        if (rpn_id->value == 0.0) { 
+
+            Result* result = RPN_Walk($1, hash);
+            if(result->type == MATRIX) {
+                imprimir_matriz(result->matriz, settings);
+            } 
+            else {
+                printf("%.*f\n", settings->float_precision, result->value);
+            }
+            free_result(result);
+        }
         Delete_Tree($1);
         return 1;
     }
+    | EOL {return 1;}
 ;
 
 p1:
     SETTINGS PONTO_VIRGULA EOL { show_settings(settings); return 1; }
     | MATRIX PONTO_VIRGULA EOL { 
         if (!matriz) {
-            printf("No Matrix defined!\n");
+            printf("\nNo Matrix defined!\n");
             return 1;
         } else {
-            printf(" @@@@@ settings->float_precision = %d\n", settings->float_precision);
             imprimir_matriz(matriz, settings);
-            //show_matrix(); 
         }
     }
     | SYMBOLS PONTO_VIRGULA EOL { printar_hash(hash); }
@@ -199,16 +261,15 @@ p3:
         else {
             printf("\nERROR: h_view_lo must be smaller than h_view_hi\n");
         }
-        
         return 1;
     }
     | V_VIEW valor INTERVALO valor PONTO_VIRGULA EOL { 
         if ($2->value_float < $4->value_float) {
             settings->v_view_lo = $2->value_float; settings->v_view_hi = $4->value_float; 
         } else {
-            printf("ERROR: v_view_lo must be smaller than v_view_hi\n");
-            return 1;
+            printf("\nERROR: v_view_lo must be smaller than v_view_hi\n");
         }
+        return 1;
     }
     | AXIS ON PONTO_VIRGULA EOL { settings->draw_axis = 1; }
     | AXIS OFF PONTO_VIRGULA EOL { settings->draw_axis = 0; }
@@ -218,13 +279,13 @@ p3:
         if ($2->value_float > 0)
             settings->integral_steps = $2->value_int; 
         else {
-            printf("ERROR: integral_steps must be a positive non-zero integer\n");
-            return 1;
+            printf("\nERROR: integral_steps must be a positive non-zero integer\n");
         }
+        return 1;
     }
     | FLOAT PRECISION valor PONTO_VIRGULA EOL { 
         if ($3->value_int < 0 || $3->value_int > 8)
-            printf("ERROR: float precision must be from 0 to 8\n");
+            printf("\nERROR: float precision must be from 0 to 8\n");
         else
             settings->float_precision = $3->value_int; 
 
@@ -236,18 +297,17 @@ p4:
     PONTO_VIRGULA EOL {
         if(funcao_inserida == 0) {
             printf("\nNo Function defined!\n\n");
-            //return 0;
         } else {
-            //plot(AST, settings, hash);
-            printf("plot");
+            plot(AST, settings, hash);
         }
+        return 1;
     }
     | ABRE_PARENTESES exp FECHA_PARENTESES PONTO_VIRGULA EOL {
 
         AST = $2;
         funcao_inserida = 1;
         if(AST) {
-            printf("Plot\n");
+            plot(AST, settings, hash);
         }
     }
 ;
@@ -264,7 +324,7 @@ p5:
                 clear_matrix(matriz);
                 return 1;
             } else {
-                printf("Matrix format incorrect!\n");
+                printf("\nMatrix format incorrect!\n");
                 return 1;
             }
         }
@@ -278,7 +338,7 @@ p5:
         
         int ls = calculo_sistema_linear(matriz);
         if (ls == 1) {
-            printf("Matrix format incorrect!\n");
+            printf("\nMatrix format incorrect!\n");
         }
         return 1;
     }
@@ -289,7 +349,7 @@ p5:
 exp: 
     factor { $$ = $1; }
     | exp ADICAO factor { 
-        //  create_ast_node(node_type, value_int, value_float, value_string, left, right);
+        //           create_ast_node(node_type,int,float,string, left, right);
         TreeNode* aux = create_ast_node(ADICAO, -2, -2, NULL, $1, $3);
         $$ = aux;
     }
@@ -297,37 +357,38 @@ exp:
         TreeNode* aux = create_ast_node(SUBTRACAO, -2, -2, NULL, $1, $3);
         $$ = aux;
     }
-    | PI {
-        TreeNode* aux = create_ast_node(PI, 3, pi, NULL, NULL, NULL);
-        $$ = aux;
-    }
 ;
 
 factor: 
-    term { $$ = $1; }
-    | factor MULTIPLICACAO term { 
+    exponenciacao { $$ = $1; }
+    | factor MULTIPLICACAO exponenciacao { 
         //  create_ast_node(node_type, value_int, value_float, value_string, left, right);
         TreeNode* aux = create_ast_node(MULTIPLICACAO, -2, -2, NULL, $1, $3);
         $$ = aux;
     }
-    | factor DIVISAO term { 
+    | factor DIVISAO exponenciacao { 
         TreeNode* aux = create_ast_node(DIVISAO, -2, -2, NULL, $1, $3);
         $$ = aux;
     }
-    | factor POTENCIACAO term { 
-        TreeNode* aux = create_ast_node(POTENCIACAO, -2, -2, NULL, $1, $3);
-        $$ = aux;
-    }
-    | factor RESTO_DIVISAO term { 
+    | factor RESTO_DIVISAO exponenciacao { 
         TreeNode* aux = create_ast_node(RESTO_DIVISAO, -2, -2, NULL, $1, $3);
         $$ = aux;
     }
-    | func_trigonometrica { $$ = $1; }
+;
+
+exponenciacao:
+    func_trigonometrica { $$ = $1; }
+    | func_trigonometrica POTENCIACAO exponenciacao { 
+        TreeNode* aux = create_ast_node(POTENCIACAO, -2, -2, NULL, $1, $3);
+        $$ = aux;
+    }
+    
 ;
 
 func_trigonometrica:
 
-     SEN ABRE_PARENTESES exp FECHA_PARENTESES {
+    term { $$ = $1; }
+    | SEN ABRE_PARENTESES exp FECHA_PARENTESES {
         TreeNode* aux = create_ast_node(SEN, -2,-2, NULL, $3, NULL);
         $$ = aux;
     }
@@ -353,22 +414,19 @@ term:
         TreeNode* aux = create_ast_node(IDENTIFICADOR, -2, -2, $1, NULL, NULL);
         $$ = aux;
     }
+    | X {
+        TreeNode* aux = create_ast_node(X, -2, -2, NULL, NULL, NULL);
+        $$ = aux;
+    }
 
     | ABRE_PARENTESES exp FECHA_PARENTESES {
         $$ = $2;
-    } 
-    /* ABRE_COLCHETES ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas FECHA_COLCHETES PONTO_VIRGULA EOL {
-        TreeNode* aux = create_ast_node(MATRIZ, -2, -2, NULL, NULL);
-        insert_info(pilha_primeirosValores, $3->value_float, '@');
-        //                 chave (identif),   valor ???   tipo
-        //inserir_hash(hash, $nome_da_matriz, 33333333333, MATRIZ);
-        $$ = aux;   // fix
-    } */
+    }
 ;
 
 valor:
     ADICAO NUMERO_REAL { 
-        //  create_ast_node(node_type, value_int, value_float, value_string, left, right);
+        //               create_ast_node(node_type,  int, float,string, matriz, left, right);
         TreeNode* aux = create_ast_node(NUMERO_REAL, (int)$2, $2, NULL, NULL, NULL);
         $$ = aux;
     }
@@ -393,9 +451,12 @@ valor:
         $$ = aux; 
     }
     | PI { 
-        TreeNode* aux = create_ast_node(PI, 3, 3.141592653, NULL, NULL, NULL);
+        TreeNode* aux = create_ast_node(NUMERO_REAL, 3, 3.14159265, NULL, NULL, NULL);
         $$ = aux;
-        //inserir_hash(hash, "pi", 3.141592653);
+    }
+    | E {
+        TreeNode* aux = create_ast_node(NUMERO_REAL, 2, 2.71828182, NULL, NULL, NULL);
+        $$ = aux;
     }
 ;
 
@@ -429,16 +490,17 @@ zero_ou_mais_linhas:
 ;
 
 cria_matriz: //  [ [ valor zero_ou_mais_valores_interno ] {,[ valor zero_ou_mais_valores_interno ] }∗ ];
-    ABRE_COLCHETES ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas FECHA_COLCHETES PONTO_VIRGULA EOL { 
-
+    ABRE_COLCHETES ABRE_COLCHETES valor contador_colunas FECHA_COLCHETES zero_ou_mais_linhas FECHA_COLCHETES  PONTO_VIRGULA EOL { 
         insert_info(pilha_primeirosValores, $3->value_float, '@'); // @ = fim da coluna
+        //TreeNode* aux = create_ast_node(MATRIX, -2, -2, NULL, NULL, NULL);
+        //$$ = aux;
     }
 ;
 
 %%
 
 void informacoes_aluno() {
-    printf("+--------------------------------------------------------+\n");
+    printf("\n+--------------------------------------------------------+\n");
     printf("|                                                        |\n");
     printf("|              Beatriz Barrios Caporusso                 |\n");
     printf("|                    202000560034                        |\n");
@@ -449,27 +511,51 @@ void informacoes_aluno() {
 
 void comando_sum(char* variavel, TreeNode *lim_inferior, TreeNode *lim_superior, TreeNode *no_expr, HashTable* hash) {
 
-    float result_somatorio = 0;
+    Result* result = (Result*)malloc(sizeof(Result));
+    result->value = 0;
+    result->matriz = NULL;
 
-    for (int i=lim_inferior->value_int; i<=lim_superior->value_int; i++) {
-        inserir_hash(hash, variavel, i, IDENTIFICADOR);
-        result_somatorio += RPN_Walk(no_expr, hash);
-    }
+    float aux_value = 0.0;
+    
+    inserir_hash(hash, variavel, lim_inferior->value_int, NUMERO_REAL, NULL);
+    Result* rpn_id = RPN_identifier(no_expr, hash);
+    if((int)rpn_id->value == 0) {
+        for (int i=lim_inferior->value_int; i<=lim_superior->value_int; i++) {
+            inserir_hash(hash, variavel, i, NUMERO_REAL, NULL);
+            //result->value += RPN_Walk(no_expr, hash);
+            result = RPN_Walk(no_expr, hash);
 
-    printf("%f", result_somatorio);
+            result->type = NUMERO_REAL;
+            aux_value += result->value;
+        }
+
+        printf("\n%f\n", aux_value);
+    } 
+    free_result(result);
+    free_result(rpn_id);
 }
 
-void integrate(float lim_inferior, float lim_superior, TreeNode *no_expr, HashTable* hash) {
+void integrate(float lower_limit, float upper_limit, TreeNode *no_expr, HashTable* hash) {
 
-    float result_integral = 0;
-    float h = (lim_superior - lim_inferior) / settings->integral_steps;
+    float dx = (upper_limit - lower_limit) / settings->integral_steps;
+    float sum = 0.0;
+    float x;
 
-    for (int i=0; i<settings->integral_steps; i++) {
-        result_integral += RPN_Walk(no_expr, hash);
+    Result* result = (Result*)malloc(sizeof(Result));
+    result->value = 0;
+
+    // Soma de Riemman
+    for (int i = 0; i < settings->integral_steps; i++) {
+        x = i * dx; 
+        set_X(x);
+        result = RPN_Walk(no_expr, hash);
+        sum += result->value;
     }
 
-    result_integral *= h;
-    printf("  INTEGAL = %f", result_integral);
+    result->value = sum* dx;
+
+    printf("\n%f\n", result->value);
+    free_result(result);
 }
 
 int main(int argc, char** argv) {
@@ -479,6 +565,7 @@ int main(int argc, char** argv) {
     pilha_primeirosValores = create_pilha();
     pilha = create_pilha();
     matriz = create_matrix();
+    matriz_aux = create_matrix();
 
     int verificador_comandos = 1;
 
@@ -492,21 +579,33 @@ int main(int argc, char** argv) {
     free_pilha(pilha_primeirosValores);
     free_pilha(pilha);
     free_matriz(matriz);
+    free_matriz(matriz_aux);
 
     return 0;
 }
 
 void yyerror(char *s) {
 	
+    //verificar se ja houve erro
+    if(erro == 1) 
+        return;
     switch(yychar) {
         case INVALID_SYMBOL:
-            printf("Invalid Symbol: %s\n", yytext);
+            printf("\nInvalid Symbol: %s\n", yytext);
+            //erro = 1;
             break;
-        case SYNTAX_ERROR:
-            printf("SYNTAX ERROR: [%s]\n", yytext);
+        case EOL:
+            printf("\nSYNTAX ERROR: Incomplete Command\n");
+            //erro = 1;
             break;
         default:
-            printf("SYNTAX ERROR: Incomplete Command\n");
+            if(!strcmp(s, "syntax error"))
+                printf("\nSYNTAX ERROR: [%s]\n\n",yytext);
+            else
+                printf("\n%s\n\n", s);
+            //erro = 1;
             break;
     }
+
+    // frees
 }

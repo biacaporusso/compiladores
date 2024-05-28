@@ -1,8 +1,11 @@
-#include "hash.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <hash.h>
+#include <sintatico.tab.h>
+#include <hash.h>
+
 
 #define SIZE 977
 
@@ -32,21 +35,72 @@ int calculo_hash(char *key) {
 }
 
 // Função para criar um novo nó
-HashNode *create_hash_node(char *key, float value, int tipo) {
+HashNode *create_hash_node(char *key, float value, int tipo, Matriz* matriz) {
     HashNode *newNode = (HashNode *)malloc(sizeof(HashNode));
     newNode->key = strdup(key);
     newNode->value = value;
     newNode->type = tipo;
+
+    if(matriz)
+    {
+    Matriz* copia;
+        copia = copia_matriz(matriz);
+        newNode->valor_matriz = copia;
+    }
     newNode->next = NULL;
     return newNode;
 }
 
+Matriz* copia_matriz(Matriz* original) {
+    Matriz* copia = create_matrix();
+    copia->linhas = original->linhas;
+    copia->colunas = original->colunas;
+
+    copia->dados = (float**)malloc(original->linhas * sizeof(float*));
+    for(int i=0; i<original->linhas; i++) {
+        copia->dados[i] = (float*)malloc(original->colunas * sizeof(float));
+        for (int j=0; j<original->colunas; j++) {
+            copia->dados[i][j] = original->dados[i][j];
+        }
+    }
+
+    return copia;
+}
+
 // Função para inserir um par chave-valor na tabela hash
-void inserir_hash(HashTable *ht, char *key, float value, int tipo) {
+void inserir_hash(HashTable *ht, char *key, float value, int tipo, Matriz* matriz) {
+
     int index = calculo_hash(key);
-    HashNode *newNode = create_hash_node(key, value, tipo);
-    newNode->next = ht->table[index];
-    ht->table[index] = newNode;
+    HashNode *current = ht->table[index];
+    HashNode *prev = NULL;
+    
+    // Percorrer a lista encadeada na posição hash correspondente
+    while (current != NULL) {
+        // Se a chave já existe, atualiza o valor e retorna
+        if (strcmp(current->key, key) == 0) {
+            current->type = tipo;
+            if(tipo == MATRIX) {
+                free_matriz(current->valor_matriz);
+                current->valor_matriz = copia_matriz(matriz);
+            } else if (tipo == NUMERO_INTEIRO || tipo == NUMERO_REAL) {
+                current->value = value;
+            }
+            return;
+        }
+        // Avança para o próximo nó na lista encadeada
+        prev = current;
+        current = current->next;
+    }
+
+    // Se a chave não existir, insere um novo nó no início da lista encadeada
+    HashNode *newNode = create_hash_node(key, value, tipo, matriz);
+    if (prev == NULL) {
+        // Se prev for NULL, significa que a lista está vazia
+        ht->table[index] = newNode;
+    } else {
+        // Caso contrário, insira o novo nó após o nó anterior
+        prev->next = newNode;
+    }
 }
 
 // Função para pesquisar um valor na tabela hash usando a chave
@@ -99,12 +153,57 @@ float get_value(HashTable *hash_table, char *key) {
     return -1; // Retorna -1 se a chave não for encontrada
 }
 
+HashNode* get_node_hash(HashTable* hash, char* key) {
+    int index = calculo_hash(key);
+    HashNode *node = hash->table[index];
+
+    // Percorre a lista encadeada no índice correspondente da tabela hash
+    while (node != NULL) {
+        if (strcmp(node->key, key) == 0) {
+            return node; // Retorna o nó se a chave for encontrada
+        }
+        node = node->next;
+    }
+
+    return NULL; // Retorna NULL se a chave não for encontrada
+
+}
+
+void set_value(HashTable *hash_table, char *key, float value) {
+    int index = calculo_hash(key);
+    HashNode *node = hash_table->table[index];
+
+    // Percorre a lista encadeada no índice correspondente da tabela hash
+    while (node != NULL) {
+        if (strcmp(node->key, key) == 0) {
+            node->value = value; // Retorna o valor se a chave for encontrada
+            return;
+        }
+        node = node->next;
+    }
+}
+
 // Função para imprimir a tabela hash
 void printar_hash(HashTable *ht) {
+    printf("\n");
     for (int i = 0; i < SIZE; i++) {
         HashNode *current = ht->table[i];
         while (current != NULL) {
-            printf("%s - FLOAT\n", current->key);
+            switch (current->type) {
+                case NUMERO_REAL:
+                    printf("%s - FLOAT\n", current->key);
+                    break;
+                case NUMERO_INTEIRO:
+                    printf("%s - FLOAT\n", current->key);
+                    break;
+                case MATRIX:
+                    printf("%s - MATRIX[%d][%d]\n", current->key, current->valor_matriz->linhas, current->valor_matriz->colunas);
+                    break;
+                default:
+                    printf("tipo de no da hash invalido\n");
+                    break;
+            }
+        
             current = current->next;
         }
     }
@@ -129,7 +228,35 @@ void free_hash(HashTable *hash_table) {
     free(hash_table);
 }
 
+int get_tipo(HashTable *hash_table, char *key) {
+    int index = calculo_hash(key);
+    HashNode *node = hash_table->table[index];
 
+    // Percorre a lista encadeada no índice correspondente da tabela hash
+    while (node != NULL) {
+        if (strcmp(node->key, key) == 0) {
+            return node->type; // Retorna o valor se a chave for encontrada
+        }
+        node = node->next;
+    }
+
+    return -1; // Retorna -1 se a chave não for encontrada
+}
+
+Matriz* get_matriz_hash(HashTable *hash_table, char *key) {
+    int index = calculo_hash(key);
+    HashNode *node = hash_table->table[index];
+
+    // Percorre a lista encadeada no índice correspondente da tabela hash
+    while (node != NULL) {
+        if (strcmp(node->key, key) == 0) {
+            return node->valor_matriz; // Retorna o valor se a chave for encontrada
+        }
+        node = node->next;
+    }
+
+    return NULL; // Retorna -1 se a chave não for encontrada
+}
 
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- MATRIX FUNCTIONS =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -154,11 +281,11 @@ void clear_matrix(Matriz *matriz) {
         free(matriz->dados);
         matriz->dados = NULL;
     }
-    //matriz->linhas = 0;
-    //matriz->colunas = 0;
+    matriz->linhas = 0;
+    matriz->colunas = 0;
 }
 
-void insert_matrix(Matriz *matriz, Pilha* pilha_primeiros, Pilha* pilha, int num_linhas, int num_colunas) {
+int insert_matrix(Matriz *matriz, Pilha* pilha_primeiros, Pilha* pilha, int num_linhas, int num_colunas) {
 
     int descarte;
 
@@ -206,6 +333,12 @@ void insert_matrix(Matriz *matriz, Pilha* pilha_primeiros, Pilha* pilha, int num
             free(no_pilha);
             no_pilha = pop(pilha);
         }
+
+        return 1;
+
+    } else {
+        printf("\nERROR: Matrix limits out of boundaries.\n");
+        return 0;
     }
 }
 
@@ -224,10 +357,10 @@ void imprimir_matriz(Matriz *matrix, Settings* settings) {
         }
         printf("-+\n");
         // Percorre a matriz e imprime cada elemento
+        int actual_precision = (int) settings->float_precision;
         for (int i = 0; i < matrix->linhas; i++) {
             printf("|");
             for (int j = 0; j < matrix->colunas; j++) {
-                int actual_precision = (int) settings->float_precision;
                 printf(" %.*f", actual_precision, matrix->dados[i][j]);
             }
             printf(" |\n");
@@ -308,7 +441,6 @@ float calculo_determinante(Matriz *matriz) {
 }
 
 int calculo_sistema_linear(Matriz* matriz) {
-    printf("colunas-1: %d\nlinhas: %d\n", matriz->colunas-1, matriz->linhas);
 	if(matriz->colunas-1 != matriz->linhas) {
 		return 1;
 	}
@@ -439,20 +571,22 @@ void LU(Matriz* matriz) {
         }
     }
 
-	printf("\nMatrix x:\n");
+	printf("\nMatrix x:\n\n");
     
     for (i = 0; i < n; i++) {
         printf("%.6f\n", values[i]);
     }
-	printf("\n");
+	//printf("\n");
 }
 
 
 void free_matriz(Matriz *matriz) {
+
+    if(matriz == NULL)
+        return;
     for (int i = 0; i < matriz->linhas; i++) {
         free(matriz->dados[i]);
     }
     free(matriz->dados);
     free(matriz);
-    printf("saiu do libera");
 }
